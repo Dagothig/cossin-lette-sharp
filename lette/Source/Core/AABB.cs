@@ -34,6 +34,18 @@ namespace Lette.Core
 
         public static AABB operator /(AABB box, float multiplier) =>
             new AABB { Min = box.Min / multiplier, Max = box.Max / multiplier };
-    }
 
+        public static AABB operator +(AABB box, Vector2 vec) =>
+            new AABB { Min = box.Min + vec, Max = box.Max + vec };
+
+        public static AABB operator -(AABB box, Vector2 vec) =>
+            new AABB { Min = box.Min - vec, Max = box.Max - vec };
+
+        public static implicit operator AABB(Rectangle rect)
+        {
+            var min = rect.Location.ToVector2();
+            var max = min + rect.Size.ToVector2();
+            return new AABB { Min = min, Max = max };
+        }
+    }
 }

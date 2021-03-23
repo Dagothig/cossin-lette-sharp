@@ -42,5 +42,29 @@ namespace Lette.Core
                 yield return fn();
             }
         }
+
+        public static IEnumerable<T> TakeUntil<T>(this IEnumerable<T> source, Func<T, bool> predicate)
+        {
+            foreach (var t in source)
+            {
+                yield return t;
+                if (predicate(t))
+                    yield break;
+            }
+        }
+
+        public static float Angle(this Flags<AnimFlag> flags) =>
+            2f * MathF.PI * (flags.Backing & 11111111UL) / 8f;
+
+        public static void SetAngle(this Flags<AnimFlag> flags, float angle)
+        {
+            flags.Backing &= ~(11111111UL);
+            flags[(int)MathF.Floor(angle / MathF.PI * 4f + 0.5f)] = true;
+        }
+
+        public static Vector2 V2(this float angle) =>
+            new Vector2(
+                MathF.Cos(angle),
+                MathF.Sin(angle));
     }
 }

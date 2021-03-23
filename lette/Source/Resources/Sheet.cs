@@ -1,12 +1,12 @@
 using Microsoft.Xna.Framework;
 using Lette.Core;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace Lette.Resources
 {
     public class Tile
     {
-        public Vector2 Position;
-        public Vector2 Size;
+        public Rectangle Quad;
         public Vector2 Scale;
     }
 
@@ -30,6 +30,7 @@ namespace Lette.Resources
 
     public class Sheet
     {
+        public Texture2D Texture;
         public SheetEntry[] Entries;
     }
 }

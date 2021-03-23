@@ -1,14 +1,14 @@
+using System;
 using System.Linq;
 using Lette.Components;
 using Leopotam.Ecs;
 
 namespace Lette.Systems
 {
-    public class Sheets : IEcsRunSystem
+    public class Animated : IEcsRunSystem
     {
-        EcsWorld World;
-
-        EcsFilter<Sprite, Animator> AnimatedSprites;
+        EcsFilter<Sprite, Animator> AnimatedSprites = null;
+        TimeSpan step = TimeSpan.MinValue;
 
         public void Run()
         {
@@ -17,8 +17,6 @@ namespace Lette.Systems
                 ref var sprite = ref AnimatedSprites.Get1(i);
                 ref var animator = ref AnimatedSprites.Get2(i);
 
-                // TODO: Lol
-                var dt = 16f;
                 var sheet = sprite.Sheet;
                 var flags = animator.Flags;
 
@@ -44,7 +42,7 @@ namespace Lette.Systems
                 }
                 else
                 {
-                    animator.Time -= dt;
+                    animator.Time -= (float)step.TotalMilliseconds;
                     var entry = sheet.Entries[entryIdx];
                     int shift = (int)(animator.Time / entry.FrameTime);
                     animator.Time -= shift * entry.FrameTime;

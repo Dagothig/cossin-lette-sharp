@@ -15,9 +15,16 @@ namespace Lette.Core
         Moving
     }
 
+    public enum InputType
+    {
+        X,
+        Y,
+        Interaction
+    }
+
     public struct Flags<T> where T : struct, IConvertible
     {
-        private UInt64 Backing;
+        public UInt64 Backing;
 
         public bool this[int index]
         {
@@ -31,8 +38,11 @@ namespace Lette.Core
             }
         }
 
-        public bool this[T t] =>
-            this[t.ToInt32(null)];
+        public bool this[T t]
+        {
+            get => this[t.ToInt32(null)];
+            set => this[t.ToInt32(null)] = value;
+        }
 
         public bool Matches(Flags<T> toMatch) =>
             (Backing & toMatch.Backing) == toMatch.Backing;

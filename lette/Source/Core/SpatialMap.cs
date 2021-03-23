@@ -7,7 +7,6 @@ namespace Lette.Core
     public struct SpatialEntry<T>
     {
         public AABB Bounds;
-        public Vector2 Pos;
         public T Value;
     }
 
@@ -48,9 +47,9 @@ namespace Lette.Core
             .Select(entry => entry.Value)
             .Distinct();
 
-        public SpatialEntry<T> Insert(T value, Vector2 pos, AABB bounds)
+        public SpatialEntry<T> Add(T value, AABB bounds)
         {
-            var entry = new SpatialEntry<T> { Value = value, Pos = pos, Bounds = bounds };
+            var entry = new SpatialEntry<T> { Value = value, Bounds = bounds };
             foreach (var cell in Cells(bounds, true))
                 cell.Add(entry);
             return entry;
@@ -62,11 +61,11 @@ namespace Lette.Core
                 cell.Remove(entry);
         }
 
-        public SpatialEntry<T> Update(SpatialEntry<T> entry, Vector2 pos, AABB bounds)
+        public SpatialEntry<T> Update(SpatialEntry<T> entry, AABB bounds)
         {
-            if (entry.Pos == pos && entry.Bounds == bounds)
+            if (entry.Bounds == bounds)
                 return entry;
-            var newEntry = new SpatialEntry<T> { Value = entry.Value, Pos = pos, Bounds = bounds };
+            var newEntry = new SpatialEntry<T> { Value = entry.Value, Bounds = bounds };
 
             var o = Indices(entry.Bounds);
             var n = Indices(bounds);
