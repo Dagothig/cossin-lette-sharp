@@ -4,7 +4,6 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <PublishReadyToRun>false</PublishReadyToRun>
     <TieredCompilation>false</TieredCompilation>
-    <DefineConstants>LEOECS_FILTER_EVENTS</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -30,6 +29,8 @@
     <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.0.1641" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ecs\Leopotam.Ecs.csproj" />
+    <ProjectReference Include="..\ecs\Leopotam.Ecs.csproj">
+      <Properties>DefineConstants=LEOECS_FILTER_EVENTS</Properties>
+    </ProjectReference>
   </ItemGroup>
 </Project>
