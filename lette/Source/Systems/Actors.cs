@@ -3,6 +3,8 @@ using Lette.Components;
 using Lette.Core;
 using Leopotam.Ecs;
 
+using static System.MathF;
+
 namespace Lette.Systems
 {
     public class Actors : IEcsRunSystem
@@ -23,7 +25,7 @@ namespace Lette.Systems
                 else
                 {
                     actor.Flags[AnimFlag.Moving] = true;
-                    actor.Flags.SetAngle(MathF.Atan2(
+                    actor.Flags.SetAngle(Atan2(
                         input.Value[InputType.Y],
                         input.Value[InputType.X]));
                 }
@@ -42,10 +44,13 @@ namespace Lette.Systems
                 ref var actor = ref actorBodies.Get1(i);
                 ref var body = ref actorBodies.Get2(i);
 
-                body.Physics?.ApplyForce(
-                    actor.Flags.Angle().V2() *
-                    actor.Speed *
-                    Constants.DAMPING);
+                if (actor.Flags[AnimFlag.Moving])
+                {
+                    body.Physics?.ApplyForce(
+                        actor.Flags.Angle().V2() *
+                        actor.Speed *
+                        Pow(Constants.DAMPING, 1.32f));
+                }
             }
         }
     }

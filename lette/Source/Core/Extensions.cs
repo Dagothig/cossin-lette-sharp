@@ -1,25 +1,25 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
-
+using static System.MathF;
+using static System.Numerics.BitOperations;
 namespace Lette.Core
 {
     public static class Extensions
     {
         public static Point FFloor(this Vector2 value) =>
             new Point(
-                (int)Math.Floor(value.X),
-                (int)Math.Floor(value.Y));
+                (int)Floor(value.X),
+                (int)Floor(value.Y));
 
         public static Point FCeil(this Vector2 value) =>
             new Point(
-                (int)Math.Ceiling(value.X),
-                (int)Math.Ceiling(value.Y));
+                (int)Ceiling(value.X),
+                (int)Ceiling(value.Y));
 
         public static V GetOrCreate<K, V>(this Dictionary<K, V> dict, K key) where V : new()
         {
-            V val;
-            if (!dict.TryGetValue(key, out val))
+            if (!dict.TryGetValue(key, out V val))
             {
                 val = new V();
                 dict.Add(key, val);
@@ -54,17 +54,15 @@ namespace Lette.Core
         }
 
         public static float Angle(this Flags<AnimFlag> flags) =>
-            2f * MathF.PI * (flags.Backing & 11111111UL) / 8f;
+            PI * (0.5f - Log2(flags.Backing & 0b11111111UL) / 4f);
 
-        public static void SetAngle(this Flags<AnimFlag> flags, float angle)
+        public static void SetAngle(ref this Flags<AnimFlag> flags, float angle)
         {
-            flags.Backing &= ~(11111111UL);
-            flags[(int)MathF.Floor(angle / MathF.PI * 4f + 0.5f)] = true;
+            flags.Backing &= ~0b11111111UL;
+            flags[(int)Floor(10f - angle / PI * 4f + 0.5f) % 8] = true;
         }
 
         public static Vector2 V2(this float angle) =>
-            new Vector2(
-                MathF.Cos(angle),
-                MathF.Sin(angle));
+            new Vector2(Cos(angle), Sin(angle));
     }
 }

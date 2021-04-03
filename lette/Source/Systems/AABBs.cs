@@ -49,11 +49,7 @@ namespace Lette.Systems
                 var sheetEntry = sprite.Sheet.Entries[sprite.Entry];
                 var min = pos - sheetEntry.Decal;
                 var max = min + sheetEntry.Size;
-                spriteBoxes.GetEntity(i).Replace(new AABB()
-                {
-                    Min = min,
-                    Max = max
-                });
+                spriteBoxes.GetEntity(i).Replace(new AABB() { Min = min, Max = max });
             }
 
             foreach (var i in spatialEntries)
@@ -61,7 +57,7 @@ namespace Lette.Systems
                 ref var aabb = ref spatialEntries.Get1(i);
                 ref var entry = ref spatialEntries.GetEntity(i).Get<SpatialEntry<EcsEntity>>();
 
-                spatialMap.Update(entry, aabb);
+                spatialMap.Update(ref entry, aabb);
             }
         }
     }

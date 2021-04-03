@@ -1,5 +1,4 @@
 using System;
-using Microsoft.Xna.Framework;
 using Leopotam.Ecs;
 using Aether = tainicom.Aether.Physics2D;
 using Lette.Components;
@@ -15,8 +14,8 @@ namespace Lette.Systems
 
             public void OnEntityAdded(in EcsEntity entity)
             {
-                var body = entity.Get<Body>();
-                var pos = entity.Get<Pos>();
+                ref var body = ref entity.Get<Body>();
+                ref var pos = ref entity.Get<Pos>();
                 Aether.Dynamics.Body physicsBody;
 
                 switch (body.Shape.Type)
@@ -39,7 +38,7 @@ namespace Lette.Systems
 
             public void OnEntityRemoved(in EcsEntity entity)
             {
-                var body = entity.Get<Body>();
+                ref var body = ref entity.Get<Body>();
                 if (body.Physics != null)
                     physics.world.Remove(body.Physics);
             }

@@ -26,14 +26,22 @@ namespace Lette.Core
     {
         public UInt64 Backing;
 
+        public static Flags<T> New(params T[] init)
+        {
+            var flags = new Flags<T>();
+            foreach (var t in init)
+                flags[t] = true;
+            return flags;
+        }
+
         public bool this[int index]
         {
-            get => (Backing & (1UL << (index % 64))) != 0;
+            get => (Backing & (1UL << index)) != 0;
             set {
                 if (value) {
-                    Backing |= (1UL << (index % 64));
+                    Backing |= (1UL << index);
                 } else {
-                    Backing &= ~(1UL << (index % 64));
+                    Backing &= ~(1UL << index);
                 }
             }
         }
@@ -50,5 +58,8 @@ namespace Lette.Core
         // True if this has false for the flags of the inverseMatch
         public bool DoesNotMatch(Flags<T> inverseMatch) =>
             (~Backing & inverseMatch.Backing) == inverseMatch.Backing;
+
+        public static implicit operator Flags<T>(T single) =>
+            Flags<T>.New(single);
     }
 }

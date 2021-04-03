@@ -5,14 +5,34 @@ namespace Lette.Core
 {
     public struct AABB
     {
+        public static readonly float BLEED_FACTOR = 0.001f;
+        public static readonly Vector2 BLEED = Vector2.One * BLEED_FACTOR;
+
         public Vector2 Min, Max;
+
+        public AABB(float mx, float my, float Mx, float My)
+        {
+            Min = new Vector2(mx, my);
+            Max = new Vector2(Mx, My);
+        }
 
         public bool Overlaps(AABB other) =>
             Min.X < other.Max.X && other.Min.X < Max.X &&
             Min.Y < other.Max.Y && other.Min.Y < Max.Y;
 
-        public Rectangle Round() =>
-            new Rectangle(Min.FFloor(), (Max - Min).FCeil());
+        public Rectangle Round()
+        {
+            var min = Min.FFloor();
+            var max = Max.FCeil();
+            return new Rectangle(min, max - min);
+        }
+
+        public AABB Bleed() =>
+            new AABB
+            {
+                Min = Min - BLEED,
+                Max = Max + BLEED
+            };
 
         public override bool Equals(object other) =>
             other is AABB && this == (AABB)other;
@@ -28,6 +48,10 @@ namespace Lette.Core
 
         public static bool operator !=(AABB lhs, AABB rhs) =>
             !(lhs == rhs);
+
+        public bool Similar(AABB other) =>
+            (Min - other.Min).LengthSquared() < BLEED_FACTOR &&
+            (Max - other.Max).LengthSquared() < BLEED_FACTOR;
 
         public static AABB operator *(AABB box, float multiplier) =>
             new AABB { Min = box.Min * multiplier, Max = box.Max * multiplier };

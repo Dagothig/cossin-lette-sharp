@@ -26,7 +26,7 @@ namespace Lette.Systems
                 ref var keyMap = ref keysInputs.Get1(i);
                 ref var input = ref keysInputs.Get2(i);
 
-                foreach (var (key, (type, value)) in keyMap.Value.Entries)
+                foreach (var (key, (type, value)) in keyMap.Value)
                     if (keyboardState.IsKeyDown(key))
                         input.Value[type] += value;
             }

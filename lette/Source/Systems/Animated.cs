@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using Lette.Components;
 using Leopotam.Ecs;
+using Lette.Resources;
 
 namespace Lette.Systems
 {
@@ -20,18 +21,27 @@ namespace Lette.Systems
                 var sheet = sprite.Sheet;
                 var flags = animator.Flags;
 
-                var entryIdx = sprite.Sheet
-                    .Entries
-                    .Where(e => flags.Matches(e.Flags))
-                    .Select((_, index) => index)
-                    .FirstOrDefault();
+                // TODO - This is bad
 
-                var stripIdx = sprite.Sheet
-                    .Entries[entryIdx]
-                    .Strips
-                    .Where(s => flags.Matches(s.Flags))
-                    .Select((_, index) => index)
-                    .FirstOrDefault();
+                var entryIdx = 0;
+                SheetEntry entry = null;
+                for (var ei = 0; ei < sprite.Sheet.Entries.Length; ei++)
+                {
+                    entry = sprite.Sheet.Entries[ei];
+                    if (flags.Matches(sprite.Sheet.Entries[ei].Flags))
+                    {
+                        entryIdx = ei;
+                        break;
+                    }
+                }
+
+                var stripIdx = 0;
+                for (var si = 0; si < entry.Strips.Length; si++)
+                    if (flags.Matches(entry.Strips[si].Flags))
+                    {
+                        stripIdx = si;
+                        break;
+                    }
 
                 if (sprite.Entry != entryIdx || sprite.Strip != stripIdx)
                 {
@@ -42,8 +52,7 @@ namespace Lette.Systems
                 }
                 else
                 {
-                    animator.Time -= (float)step.TotalMilliseconds;
-                    var entry = sheet.Entries[entryIdx];
+                    animator.Time += (float)step.TotalMilliseconds;
                     int shift = (int)(animator.Time / entry.FrameTime);
                     animator.Time -= shift * entry.FrameTime;
                     sprite.Tile = (sprite.Tile + shift) % entry.TilesCount;

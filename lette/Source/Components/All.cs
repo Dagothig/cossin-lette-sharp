@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Lette.Core;
 using Lette.Resources;
 using Microsoft.Xna.Framework;
@@ -36,6 +37,12 @@ namespace Lette.Components
     {
         public BodyShapeType Type;
         public float Radius;
+
+        public static BodyShape Circle(float radius) => new BodyShape
+        {
+            Type = BodyShapeType.Circle,
+            Radius = radius
+        };
     }
     public struct Body
     {
@@ -49,15 +56,9 @@ namespace Lette.Components
         public Flags<AnimFlag> Flags;
     }
 
-    public struct InputEntry
-    {
-        public string Type;
-        public float Value;
-    }
-
     public struct KeyMap
     {
-        public EnumArray<Keys, (InputType, float)> Value;
+        public Dictionary<Keys, (InputType, float)> Value;
     }
 
     public struct Input

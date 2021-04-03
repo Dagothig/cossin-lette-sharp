@@ -4,6 +4,7 @@ using Lette.Components;
 using Lette.Core;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using static System.MathF;
 
 namespace Lette.Systems
 {
@@ -21,8 +22,8 @@ namespace Lette.Systems
             if (n == 0) {
                 return;
             }
-            var cols = (int)MathF.Ceiling(MathF.Sqrt(n));
-            var rows = (int)MathF.Ceiling(n / cols);
+            var cols = (int)Ceiling(Sqrt(n));
+            var rows = (int)Ceiling(n / cols);
             // TODO take into account lost decimals.
             var camSize = new Point(
                 game.GraphicsDevice.Viewport.Width / cols,
@@ -30,18 +31,17 @@ namespace Lette.Systems
 
             foreach (var i in cameras)
             {
-                ref var camera = ref cameras.Get1(i);
-                ref var pos = ref cameras.Get2(i);
-                var camPos = new Point(i % cols, (int)(i / cols));
+                var pos = cameras.Get2(i).Value * Constants.PIXELS_PER_METER;
+                var camPos = new Point(i % cols, (int)(i / cols)) * camSize;
 
                 var prevScissors = game.GraphicsDevice.ScissorRectangle;
                 game.GraphicsDevice.ScissorRectangle = new Rectangle(camPos, camSize);
 
                 batch.Begin(
-                    SpriteSortMode.BackToFront,
-                    BlendState.AlphaBlend,
-                    SamplerState.PointWrap,
-                    DepthStencilState.None,
+                    SpriteSortMode.FrontToBack,
+                    BlendState.NonPremultiplied,
+                    SamplerState.AnisotropicWrap,
+                    DepthStencilState.Default,
                     RasterizerState.CullNone,
                     null,
                     Matrix.CreateTranslation(new Vector3(
@@ -50,7 +50,8 @@ namespace Lette.Systems
 
                 var boundsCenter = bounds.Center.ToVector2();
                 foreach (var entity in spatialMap.Region((AABB)bounds + pos - boundsCenter, true)) {
-                    ref var entityPos = ref entity.Get<Pos>();
+                    // TODO 'A fonciton juste parce que ya que les sprites qui ont des AABBs
+                    var entityPos = entity.Get<Pos>().Value * Constants.PIXELS_PER_METER;
                     ref var sprite = ref entity.Get<Sprite>();
 
                     var sheet = sprite.Sheet;
@@ -59,7 +60,7 @@ namespace Lette.Systems
                     var tile = strip.Tiles[sprite.Tile];
 
                     batch.Draw(
-                        sheet.Texture,
+                        entry.Texture,
                         entityPos,
                         tile.Quad,
                         Color.White,
@@ -67,7 +68,7 @@ namespace Lette.Systems
                         entry.Decal,
                         tile.Scale,
                         SpriteEffects.None,
-                        entityPos.Value.Y);
+                        0f); // TODO - aaaaaaaaaaaa
                 }
 
                 batch.End();
