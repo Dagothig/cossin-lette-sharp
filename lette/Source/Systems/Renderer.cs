@@ -18,7 +18,7 @@ namespace Lette.Systems
 
         public void RenderSprites(AABB region, float zend, float zextent)
         {
-            foreach (var entity in spatialMap.Region(region, true)) {
+            foreach (var entity in spatialMap.Region(region)) {
                 // TODO 'A fonciton juste parce que ya que les sprites qui ont des AABBs
                 var entityPos = entity.Get<Pos>().Value * Constants.PIXELS_PER_METER;
                 entityPos.Floor();
@@ -106,21 +106,24 @@ namespace Lette.Systems
             var camSize = new Point(
                 game.GraphicsDevice.Viewport.Width / cols,
                 game.GraphicsDevice.Viewport.Height / rows);
+            var halfCamSize = camSize.ToVector2() / 2;
 
             foreach (var i in cameras)
             {
-                var pos = (cameras.Get2(i).Value * Constants.PIXELS_PER_METER);
-                pos.Floor();
-                var camPos = new Point(i % cols, (int)(i / cols)) * camSize;
-
-                game.GraphicsDevice.Viewport = new Viewport(new Rectangle(camPos, camSize));
+                game.GraphicsDevice.Viewport = new Viewport(new Rectangle(
+                    new Point(i % cols, (int)(i / cols)) * camSize,
+                    camSize));
 
                 // TODO LOL
-                var test = new Texture2D(game.GraphicsDevice, 1, 1);
+                /*var test = new Texture2D(game.GraphicsDevice, 1, 1);
                 test.SetData(new[] { Color.White });
                 batch.Begin();
                 batch.Draw(test, new Rectangle(Point.Zero, camSize), null, new Color(0, 0, i * 64));
-                batch.End();
+                batch.End();*/
+
+                var pos = (cameras.Get2(i).Value * Constants.PIXELS_PER_METER);
+                pos.Floor();
+                var region = new AABB { Min = pos - halfCamSize, Max = pos + halfCamSize };
 
                 batch.Begin(
                     SpriteSortMode.BackToFront,
@@ -129,14 +132,10 @@ namespace Lette.Systems
                     DepthStencilState.Default,
                     RasterizerState.CullNone,
                     null,
-                    Matrix.CreateTranslation(new Vector3(
-                        camSize.ToVector2() / 2 - pos,
-                        0f)));
+                    Matrix.CreateTranslation(new Vector3(-region.Min, 0)));
 
-                var boundsCenter = bounds.Center.ToVector2();
-                var region = (AABB)bounds + pos - boundsCenter;
-                var zend = region.Max.Y + bounds.Height;
-                var zextent = bounds.Height * 3;
+                var zend = region.Max.Y + camSize.Y;
+                var zextent = camSize.Y * 3;
 
                 RenderSprites(region, zend, zextent);
                 RenderTilesets(region, zend, zextent);

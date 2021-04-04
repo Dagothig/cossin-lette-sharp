@@ -33,5 +33,6 @@
     <ProjectReference Include="..\ecs\Leopotam.Ecs.csproj">
       <Properties>DefineConstants=LEOECS_FILTER_EVENTS</Properties>
     </ProjectReference>
+    <ProjectReference Include="..\lette.types\lette.types.csproj" />
   </ItemGroup>
 </Project>

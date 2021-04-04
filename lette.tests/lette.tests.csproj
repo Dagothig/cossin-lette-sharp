@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\lette\cossin-lette.csproj" />
+    <ProjectReference Include="..\lette\lette.csproj" />
   </ItemGroup>
 
 </Project>

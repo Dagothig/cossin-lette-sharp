@@ -4,6 +4,7 @@ using Lette.Resources;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Aether = tainicom.Aether.Physics2D;
+
 namespace Lette.Components
 {
     public struct Sprite

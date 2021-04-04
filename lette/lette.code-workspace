@@ -4,6 +4,9 @@
 			"path": "."
 		},
 		{
+			"path": "../lette.types"
+		},
+		{
 			"path": "../lette.tests"
 		}
 	],

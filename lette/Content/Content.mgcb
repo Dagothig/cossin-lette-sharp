@@ -10,6 +10,7 @@
 
 #-------------------------------- References --------------------------------#
 
+/reference:../../lette.types/bin/Debug/netcoreapp3.1/lette.types.dll
 
 #---------------------------------- Content ---------------------------------#
 
@@ -43,6 +44,11 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:img/cossin/cossin-neutre.png
+
+#begin img/cossin/sheet.xml
+/importer:XmlImporter
+/processor:PassThroughProcessor
+/build:img/cossin/sheet.xml
 
 #begin img/forest/anim-1x1-water-tileset.png
 /importer:TextureImporter
@@ -151,3 +157,4 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:img/ui/pane.png
+
