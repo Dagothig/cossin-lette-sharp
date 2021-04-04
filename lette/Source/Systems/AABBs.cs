@@ -47,7 +47,7 @@ namespace Lette.Systems
                 ref var sprite = ref spriteBoxes.Get2(i);
 
                 var sheetEntry = sprite.Sheet.Entries[sprite.Entry];
-                var min = pos - sheetEntry.Decal;
+                var min = pos.Value * Constants.PIXELS_PER_METER - sheetEntry.Decal;
                 var max = min + sheetEntry.Size;
                 spriteBoxes.GetEntity(i).Replace(new AABB() { Min = min, Max = max });
             }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using static System.MathF;
 using static System.Numerics.BitOperations;
 namespace Lette.Core
@@ -64,5 +65,11 @@ namespace Lette.Core
 
         public static Vector2 V2(this float angle) =>
             new Vector2(Cos(angle), Sin(angle));
+
+        public static Point Size(this Texture2D texture) =>
+            new Point(texture.Width, texture.Height);
+
+        public static Point Size<T>(this T[,] arr) =>
+            new Point(arr.GetLength(0), arr.GetLength(1));
     }
 }

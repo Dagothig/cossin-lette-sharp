@@ -49,7 +49,7 @@ namespace Lette.Systems
                     body.Physics?.ApplyForce(
                         actor.Flags.Angle().V2() *
                         actor.Speed *
-                        Pow(Constants.DAMPING, 1.32f));
+                        Pow(Constants.DAMPING, 1.25f));
                 }
             }
         }

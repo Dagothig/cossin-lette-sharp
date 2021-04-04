@@ -107,9 +107,10 @@ namespace Lette.Core
                             if (list[i].Value.Equals(entry.Value))
                             {
                                 list[i] = entry;
-                                break;
+                                goto cont;
                             }
                             list.Add(entry);
+                        cont:;
                     }
 
         }

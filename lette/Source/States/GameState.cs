@@ -9,6 +9,7 @@ using Lette.Components;
 using Microsoft.Xna.Framework.Input;
 using System.Collections.Generic;
 using Lette.Resources;
+using Tile = Lette.Components.Tile;
 
 namespace Lette.States
 {
@@ -88,7 +89,50 @@ namespace Lette.States
             };
             sheet.Init(game);
 
-            /*var other = world
+            var tileset = new Tileset
+            {
+                Src = "forest",
+                Size = new Point(24, 24),
+                Entries = new TilesetEntry[]
+                {
+                    new TilesetEntry
+                    {
+                        Src = "still-land-tileset",
+                        Size = new Point(1, 1)
+                    },
+                    new TilesetEntry
+                    {
+                        Src = "var-3x3-land-tileset",
+                        Size = new Point(3, 3)
+                    },
+                    new TilesetEntry
+                    {
+                        Src = "var-1x1-flowers-tileset",
+                        Size = new Point(1, 1)
+                    },
+                    new TilesetEntry
+                    {
+                        Src = "anim-1x1-water-tileset",
+                        Size = new Point(1, 1),
+                        FPS = 4
+                    },
+                    new TilesetEntry
+                    {
+                        Src = "anim-2x2-water-tileset",
+                        Size = new Point(2, 2),
+                        FPS = 4
+                    },
+                    new TilesetEntry
+                    {
+                        Src = "anim-3x3-water-tileset",
+                        Size = new Point(3, 3),
+                        FPS = 4
+                    }
+                }
+            };
+            tileset.Init(game);
+
+            var other = world
                 .NewEntity()
                 .Replace<Pos>(new Vector2(2, 2))
                 .Replace(new Sprite
@@ -99,7 +143,7 @@ namespace Lette.States
                 .Replace(new Animator())
                 .Replace(new Actor { Speed = 8, Flags = AnimFlag.DirBR })
                 .Replace(new Body { Shape = BodyShape.Circle(0.6f) })
-                .Replace(new Camera());*/
+                .Replace(new Camera());
 
             var cossin = world
                 .NewEntity()
@@ -127,6 +171,19 @@ namespace Lette.States
                     Value = EnumArray<InputType, float>.New()
                 })
                 .Replace(new Camera());
+
+            var tiles = world
+                .NewEntity()
+                .Replace(new Tiles
+                {
+                    Src = "forest",
+                    Tileset = tileset,
+                    Idx = Tiles.GenerateIdx(3, 3, 1,
+                        5, 0, 0, 3, 5, 1, 0, 3, 5, 2, 0, 3,
+                        5, 0, 1, 2, 5, 1, 1, 2, 5, 2, 1, 2,
+                        5, 0, 2, 1, 5, 1, 2, 1, 5, 2, 2, 1)
+                })
+                .Replace<Pos>(new Vector2(0, 0));
         }
 
         public void Update()

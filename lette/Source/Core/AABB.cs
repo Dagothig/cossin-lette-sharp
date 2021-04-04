@@ -1,5 +1,6 @@
 using System;
 using Microsoft.Xna.Framework;
+using static System.MathF;
 
 namespace Lette.Core
 {
@@ -34,6 +35,13 @@ namespace Lette.Core
                 Max = Max + BLEED
             };
 
+        public AABB Intersect(AABB other) =>
+            new AABB
+            {
+                Min = new Vector2(Max(Min.X, other.Min.X), Max(Min.Y, other.Min.Y)),
+                Max = new Vector2(Min(Max.X, other.Max.X), Min(Max.Y, other.Max.Y))
+            };
+
         public override bool Equals(object other) =>
             other is AABB && this == (AABB)other;
 
@@ -58,6 +66,9 @@ namespace Lette.Core
 
         public static AABB operator /(AABB box, float multiplier) =>
             new AABB { Min = box.Min / multiplier, Max = box.Max / multiplier };
+
+        public static AABB operator /(AABB box, Vector2 vec) =>
+            new AABB { Min = box.Min / vec, Max = box.Max / vec };
 
         public static AABB operator +(AABB box, Vector2 vec) =>
             new AABB { Min = box.Min + vec, Max = box.Max + vec };

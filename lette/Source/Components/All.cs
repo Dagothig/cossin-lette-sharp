@@ -9,10 +9,42 @@ namespace Lette.Components
     public struct Sprite
     {
         public string Src;
+        public Sheet Sheet;
         public int Entry;
         public int Strip;
         public int Tile;
-        public Sheet Sheet;
+    }
+
+    public struct Tile
+    {
+        public int Entry;
+        public Point Idx;
+        public int Height;
+    }
+
+    public struct Tiles
+    {
+        public string Src;
+        public Tileset Tileset;
+        public Tile[,,] Idx;
+
+        public static Tile[,,] GenerateIdx(int w, int h, int d, params int[] exys)
+        {
+            var idx = new Tile[w, h, d];
+            for (var x = 0; x < w; x++)
+                for (var y = 0; y < h; y++)
+                    for (var z = 0; z < d; z++)
+                        {
+                            var i = x + y * w + z * w * h;
+                            idx[x, y, z] = new Tile()
+                            {
+                                Entry = exys[i * 4],
+                                Idx = new Point(exys[i * 4 + 1], exys[i * 4 + 2]),
+                                Height = exys[i * 4 + 3]
+                            };
+                        }
+            return idx;
+        }
     }
 
     public struct Animator

@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using Lette.Components;
 using Leopotam.Ecs;
 using Lette.Resources;
@@ -8,15 +7,18 @@ namespace Lette.Systems
 {
     public class Animated : IEcsRunSystem
     {
-        EcsFilter<Sprite, Animator> AnimatedSprites = null;
+        EcsFilter<Sprite, Animator> animatedSprites = null;
+        EcsFilter<Tiles> animatedTiles = null;
         TimeSpan step = TimeSpan.MinValue;
 
         public void Run()
         {
-            foreach (var i in AnimatedSprites)
+            var dt = (float)step.TotalMilliseconds;
+
+            foreach (var i in animatedSprites)
             {
-                ref var sprite = ref AnimatedSprites.Get1(i);
-                ref var animator = ref AnimatedSprites.Get2(i);
+                ref var sprite = ref animatedSprites.Get1(i);
+                ref var animator = ref animatedSprites.Get2(i);
 
                 var sheet = sprite.Sheet;
                 var flags = animator.Flags;
@@ -52,10 +54,24 @@ namespace Lette.Systems
                 }
                 else
                 {
-                    animator.Time += (float)step.TotalMilliseconds;
+                    animator.Time += dt;
                     int shift = (int)(animator.Time / entry.FrameTime);
                     animator.Time -= shift * entry.FrameTime;
                     sprite.Tile = (sprite.Tile + shift) % entry.TilesCount;
+                }
+            }
+
+            foreach (var i in animatedTiles)
+            {
+                ref var tiles = ref animatedTiles.Get1(i);
+                var tileset = tiles.Tileset;
+
+                foreach (var entry in tileset.Entries)
+                {
+                    entry.Time += dt;
+                    int shift = (int)(entry.Time / entry.FrameTime);
+                    entry.Time -= shift * entry.FrameTime;
+                    entry.FrameTile = (entry.FrameTile + shift * entry.Size.Y) % entry.Quads.GetLength(1);
                 }
             }
         }
