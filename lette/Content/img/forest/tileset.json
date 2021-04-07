@@ -1,0 +1,33 @@
+{
+
+    "size": [24, 24],
+    "entries": [
+        {
+            "src": "still-land-tileset.png",
+            "size": [1, 1]
+        },
+        {
+            "src": "var-3x3-land-tileset.png",
+            "size": [3, 3]
+        },
+        {
+            "src": "var-1x1-flowers-tileset.png",
+            "size": [1, 1]
+        },
+        {
+            "src": "anim-1x1-water-tileset.png",
+            "fps": 4,
+            "size": [1, 1]
+        },
+        {
+            "src": "anim-2x2-water-tileset.png",
+            "fps": 4,
+            "size": [2, 2]
+        },
+        {
+            "src": "anim-3x3-water-tileset.png",
+            "fps": 4,
+            "size": [3, 3]
+        }
+    ]
+}

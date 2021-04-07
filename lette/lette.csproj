@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <PublishReadyToRun>false</PublishReadyToRun>
     <TieredCompilation>false</TieredCompilation>
     <DefineConstants>LEOECS_FILTER_EVENTS</DefineConstants>
@@ -19,20 +19,12 @@
     <EmbeddedResource Include="Icon.bmp" />
   </ItemGroup>
   <ItemGroup>
-    <MonoGameContentReference Include="Content\Content.mgcb" />
-  </ItemGroup>
-  <ItemGroup>
-    <TrimmerRootAssembly Include="Microsoft.Xna.Framework.Content.ContentTypeReader" Visible="false" />
-  </ItemGroup>
-  <ItemGroup>
     <PackageReference Include="Aether.Physics2D.MG" Version="1.5.0" />
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.0.1641" />
-    <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.0.1641" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ecs\Leopotam.Ecs.csproj">
       <Properties>DefineConstants=LEOECS_FILTER_EVENTS</Properties>
     </ProjectReference>
-    <ProjectReference Include="..\lette.types\lette.types.csproj" />
   </ItemGroup>
 </Project>

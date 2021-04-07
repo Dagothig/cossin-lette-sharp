@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Collections;
+using Lette.Core;
 
 public struct EnumArray<K, V>: IEnumerable<(K, V)> where K : struct, IConvertible
 {
@@ -9,7 +10,7 @@ public struct EnumArray<K, V>: IEnumerable<(K, V)> where K : struct, IConvertibl
 
     public static EnumArray<K, V> New() => new EnumArray<K, V>()
     {
-        Values = new V[Enum.GetValues(typeof(K)).Length]
+        Values = new V[Enum<K>.Values.Length]
     };
 
     public static EnumArray<K, V> New(params (K, V)[] entries)

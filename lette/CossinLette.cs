@@ -16,7 +16,6 @@ namespace Lette
 
         public CossinLette()
         {
-            Content.RootDirectory = "Content";
             Graphics = new GraphicsDeviceManager(this);
             QueuedStates.Enqueue(new GameState(this));
         }

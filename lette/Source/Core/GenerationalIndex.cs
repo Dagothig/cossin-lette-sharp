@@ -71,12 +71,13 @@ namespace Lette.Core
         {
         }
 
-        public ref T? this[GenerationalIndex index]
+        public ref T this[GenerationalIndex index]
         {
             get
             {
-                ref var entry = Backing[index.Index];
-                return entry.Generation == index.Generation ? entry.Value
+                ref var entry = ref Backing[index.Index];
+                return entry.Value;
+                return entry.Generation == index.Generation ? entry.Value : (T?)null;
             }
             set
             {

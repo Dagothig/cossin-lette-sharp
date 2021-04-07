@@ -21,6 +21,8 @@ namespace Lette.Systems
                 ref var animator = ref animatedSprites.Get2(i);
 
                 var sheet = sprite.Sheet;
+                if (sheet == null)
+                    continue;
                 var flags = animator.Flags;
 
                 // TODO - This is bad
@@ -65,6 +67,8 @@ namespace Lette.Systems
             {
                 ref var tiles = ref animatedTiles.Get1(i);
                 var tileset = tiles.Tileset;
+                if (tileset == null)
+                    continue;
 
                 foreach (var entry in tileset.Entries)
                 {

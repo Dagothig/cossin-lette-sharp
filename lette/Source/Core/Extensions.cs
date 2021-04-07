@@ -1,11 +1,20 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using static System.MathF;
 using static System.Numerics.BitOperations;
 namespace Lette.Core
 {
+    public static class Enum<T>
+    {
+        public static string[] Names = Enum.GetNames(typeof(T));
+        public static T[] Values = Enum.GetValues(typeof(T)).Of<T>();
+        public static Dictionary<string, T> Map = new Dictionary<string, T>(
+            Names.Zip(Values, (k, v) => new KeyValuePair<string, T>(k, v)));
+    }
+
     public static class Extensions
     {
         public static Point FFloor(this Vector2 value) =>
@@ -52,6 +61,41 @@ namespace Lette.Core
                 if (predicate(t))
                     yield break;
             }
+        }
+
+        public static void Take<T>(this IEnumerable<T> source, out T one) =>
+            one = source.Take(1).ToArray()[0];
+
+        public static void Take<T>(this IEnumerable<T> source, out T x, out T y)
+        {
+            var arr = source.Take(2).ToArray();
+            x = arr[0];
+            y = arr[1];
+        }
+
+        public static void Take<T>(this IEnumerable<T> source, out T x, out T y, out T z)
+        {
+            var arr = source.Take(3).ToArray();
+            x = arr[0];
+            y = arr[1];
+            z = arr[2];
+        }
+
+        public static void Take<T>(this IEnumerable<T> source, out T x, out T y, out T z, out T d)
+        {
+            var arr = source.Take(4).ToArray();
+            x = arr[0];
+            y = arr[1];
+            z = arr[2];
+            d = arr[3];
+        }
+
+        public static T[] Of<T>(this Array arr)
+        {
+            var res = new T[arr.Length];
+            for (var i = 0; i < arr.Length; i++)
+                res[i] = (T)arr.GetValue(i);
+            return res;
         }
 
         public static float Angle(this Flags<AnimFlag> flags) =>

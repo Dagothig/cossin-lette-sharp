@@ -1,4 +1,7 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Lette.Core
 {
@@ -58,6 +61,17 @@ namespace Lette.Core
         // True if this has false for the flags of the inverseMatch
         public bool DoesNotMatch(Flags<T> inverseMatch) =>
             (~Backing & inverseMatch.Backing) == inverseMatch.Backing;
+
+        public IEnumerable<(string, T)> Entries
+        {
+            get
+            {
+                var self = this;
+                return Enum<T>.Names
+                    .Zip(Enum<T>.Values, (k, v) => (k, v))
+                    .Where(e => self[e.Item2]);
+            }
+        }
 
         public static implicit operator Flags<T>(T single) =>
             Flags<T>.New(single);

@@ -32,6 +32,7 @@ namespace Lette.Systems
                 }
 
                 body.Physics = physicsBody;
+                body.Physics.Tag = entity;
                 physicsBody.LinearDamping = Constants.DAMPING;
                 physicsBody.FixedRotation = true;
             }
@@ -40,7 +41,10 @@ namespace Lette.Systems
             {
                 ref var body = ref entity.Get<Body>();
                 if (body.Physics != null)
+                {
                     physics.world.Remove(body.Physics);
+                    body.Physics.Tag = null;
+                }
             }
         }
 

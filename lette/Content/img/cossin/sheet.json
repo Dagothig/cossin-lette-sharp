@@ -1,0 +1,19 @@
+{
+    "entries": [
+        {
+            "src": "cossin-marche.png",
+            "size": [64, 96],
+            "decal": [32, 80],
+            "fps": 10,
+            "flags": ["Moving"],
+            "stripsVariantsPreset": "FlipDirStrips"
+        },
+        {
+            "src": "cossin-neutre.png",
+            "size": [64, 96],
+            "decal": [32, 80],
+            "fps": 4,
+            "stripsVariantsPreset": "FlipDirStrips"
+        }
+    ]
+}

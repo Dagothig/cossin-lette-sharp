@@ -21,10 +21,11 @@ namespace Lette.Systems
             foreach (var entity in spatialMap.Region(region)) {
                 // TODO 'A fonciton juste parce que ya que les sprites qui ont des AABBs
                 var entityPos = entity.Get<Pos>().Value * Constants.PIXELS_PER_METER;
-                entityPos.Floor();
                 ref var sprite = ref entity.Get<Sprite>();
 
                 var sheet = sprite.Sheet;
+                if (sheet == null)
+                    continue;
                 var entry = sheet.Entries[sprite.Entry];
                 var strip = entry.Strips[sprite.Strip];
                 var tile = strip.Tiles[sprite.Tile];
@@ -48,11 +49,12 @@ namespace Lette.Systems
             {
                 ref var tiles = ref positionedTiles.Get1(j);
                 var tileset = tiles.Tileset;
+                if (tileset == null)
+                    continue;
 
                 var tileSize = tileset.Size.ToVector2();
 
                 var tpos = positionedTiles.Get2(j).Value * Constants.PIXELS_PER_METER;
-                tpos.Floor();
                 // TODO This should only be tileSize / 2????
                 var tregion = ((region - tpos + tileSize) / tileSize).Round();
 
@@ -122,13 +124,12 @@ namespace Lette.Systems
                 batch.End();*/
 
                 var pos = (cameras.Get2(i).Value * Constants.PIXELS_PER_METER);
-                pos.Floor();
                 var region = new AABB { Min = pos - halfCamSize, Max = pos + halfCamSize };
 
                 batch.Begin(
                     SpriteSortMode.BackToFront,
-                    BlendState.AlphaBlend,
-                    SamplerState.AnisotropicWrap,
+                    BlendState.NonPremultiplied,
+                    SamplerState.AnisotropicClamp,
                     DepthStencilState.Default,
                     RasterizerState.CullNone,
                     null,
