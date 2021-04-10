@@ -115,7 +115,7 @@ namespace Lette.Systems
                 return;
             }
             var cols = (int)Ceiling(Sqrt(n));
-            var rows = (int)Ceiling(n / cols);
+            var rows = (int)Ceiling(n / (float)cols);
             // TODO take into account lost decimals.
             var camSize = new Point(
                 game.GraphicsDevice.Viewport.Width / cols,
@@ -127,13 +127,6 @@ namespace Lette.Systems
                 game.GraphicsDevice.Viewport = new Viewport(new Rectangle(
                     new Point(i % cols, (int)(i / cols)) * camSize,
                     camSize));
-
-                // TODO LOL
-                /*var test = new Texture2D(game.GraphicsDevice, 1, 1);
-                test.SetData(new[] { Color.White });
-                batch.Begin();
-                batch.Draw(test, new Rectangle(Point.Zero, camSize), null, new Color(0, 0, i * 64));
-                batch.End();*/
 
                 var pos = (cameras.Get2(i).Value * Constants.PIXELS_PER_METER);
                 var region = new AABB { Min = pos - halfCamSize, Max = pos + halfCamSize };
