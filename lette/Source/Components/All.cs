@@ -7,13 +7,21 @@ using Aether = tainicom.Aether.Physics2D;
 
 namespace Lette.Components
 {
-    public struct Sprite
+    public interface IHandle
+    {
+        string Src { get; }
+        GenIdx Idx { get; set; }
+    }
+    public struct Sprite : IHandle
     {
         public string Src;
         public GenIdx SheetIdx;
         public int Entry;
         public int Strip;
         public int Tile;
+
+        string IHandle.Src => Src;
+        public GenIdx Idx { get => SheetIdx; set => SheetIdx = value; }
     }
 
     public struct Tile
@@ -23,12 +31,8 @@ namespace Lette.Components
         public int Height;
     }
 
-    public struct Tiles
+    public struct Tiles : IHandle
     {
-        public string Src;
-        public GenIdx TilesetIdx;
-        public Tile[,,] Idx;
-
         public static Tile[,,] GenerateIdx(int w, int h, int d, params int[] exys)
         {
             var idx = new Tile[w, h, d];
@@ -46,6 +50,13 @@ namespace Lette.Components
                         }
             return idx;
         }
+
+        public string Src;
+        public GenIdx TilesetIdx;
+        public Tile[,,] Idx;
+
+        string IHandle.Src => Src;
+        GenIdx IHandle.Idx { get => TilesetIdx; set => TilesetIdx = value; }
     }
 
     public struct Animator

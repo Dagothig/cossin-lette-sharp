@@ -28,60 +28,95 @@ namespace Lette.Systems
         }
     }
 
-    public class Loader : IEcsInitSystem, IEcsRunSystem, IEcsDestroySystem
+    public abstract class Loader<H, R> : IEcsInitSystem, IEcsRunSystem, IEcsDestroySystem
+    where H: struct, IHandle
     {
-        JsonSerializerOptions? options = null;
-        FileSystemWatcher? watcher = null;
+        protected JsonSerializerOptions options = JsonSerialization.GetOptions();
+        protected FileSystemWatcher? watcher = null;
 
-        Game? game = null;
-        EcsFilter<Sprite>? sprites = null;
-        EcsFilter<Tiles>? tiles = null;
+        protected Game? game = null;
+        protected EcsFilter<H>? handles = null;
 
-        GenArr<Sheet>? sheets = null;
-        GenArr<Tileset>? tilesets = null;
-        Dictionary<string, LoadEntry<Sheet>> sheetsEntries = new();
-        Dictionary<string, LoadEntry<Tileset>> tilesetsEntries = new();
+        protected GenArr<R>? resources = null;
+        protected Dictionary<string, LoadEntry<R>> entries = new();
+
+        public abstract Task<R> Load(string src, CancellationToken token);
+
+        public void Load(LoadEntry<R> entry, bool debounce = false)
+        {
+            if (resources == null)
+                throw new NullReferenceException();
+            entry.TokenSource?.Cancel();
+            entry.TokenSource = new CancellationTokenSource();
+            var token = entry.TokenSource.Token;
+            Task.Run(async () =>
+            {
+                if (debounce)
+                    await Task.Delay(50, token);
+                try
+                {
+                    var result = await Load(entry.Src, token);
+                    if (!token.IsCancellationRequested)
+                        resources[entry.Idx] = result;
+                }
+                catch (OperationCanceledException) {}
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Could not load resource { entry.Src }");
+                    Console.WriteLine(ex.ToString());
+                }
+            });
+        }
 
         public void Init()
         {
-            options = JsonSerialization.GetOptions();
-
-            // TODO This should only be in debug
-            watcher = new()
-            {
-                Path = "Content",
-                IncludeSubdirectories = true,
-                EnableRaisingEvents = true
-            };
-            watcher.Created += OnChanged;
-            watcher.Changed += OnChanged;
+            if (watcher != null)
+                watcher.Changed += OnChanged;
         }
 
         public void Destroy()
         {
-            watcher?.Dispose();
-            watcher = null;
+            foreach (var (key, value) in entries)
+                value.TokenSource?.Cancel();
+            if (watcher != null)
+                watcher.Changed -= OnChanged;
         }
 
         public void OnChanged(object sender, FileSystemEventArgs e)
         {
-            if (e.Name == null)
-                return;
-            e.Name.Split("/").Take(out var type, out var resource);
-
-            if (type == "img")
-            {
-                if (sheetsEntries.TryGetValue(resource, out var sheetEntry) && sheets != null)
-                    Load(sheets, sheetEntry, LoadSheet);
-                else if (tilesetsEntries.TryGetValue(resource, out var tilesetEntry) && tilesets != null)
-                    Load(tilesets, tilesetEntry, LoadTileset);
-            }
+            (e.Name ?? "").Split("/").Take(out var type, out var resource);
+            if (type == "img" && entries.TryGetValue(resource, out var entry) && resources != null)
+                Load(entry, true);
         }
 
-        public async Task<Sheet> LoadSheet(string src, CancellationToken token)
+        public void Run()
+        {
+            if (handles != null && entries != null && resources != null) foreach (var i in handles)
+            {
+                ref var handle = ref handles.Get1(i);
+                if (!handle.Idx.IsNull)
+                    continue;
+                if (entries.TryGetValue(handle.Src, out var foundEntry))
+                {
+                    handle.Idx = foundEntry.Idx;
+                }
+                else
+                {
+                    var entry = new LoadEntry<R>(handle.Src, resources.Allocator.Alloc());
+                    handle.Idx = entry.Idx;
+                    entries[handle.Src] = entry;
+                    Load(entry);
+                }
+            }
+        }
+    }
+
+    public class SheetLoader : Loader<Sprite, Sheet>
+    {
+        public override async Task<Sheet> Load(string src, CancellationToken token)
         {
             if (game == null)
-                throw new Exception();
+                throw new NullReferenceException();
             using (var file = File.OpenRead($"Content/img/{ src }/sheet.json"))
             {
                 var sheet = await JsonSerializer.DeserializeAsync<Sheet>(file, options, token);
@@ -91,7 +126,7 @@ namespace Lette.Systems
                 await Task.WhenAll(sheet.Entries.Select(entry => Task.Run(() =>
                 {
                     entry.Texture = Texture2D.FromFile(game.GraphicsDevice, $"Content/img/{ src }/{ entry.Src }");
-                    if (token.IsCancellationRequested) return;
+                    token.ThrowIfCancellationRequested();
                     entry.FrameTime = 1000f / entry.FPS;
                     entry.TilesCount = (int)(entry.Texture.Width / entry.Size.X);
                     var ptSize = entry.Size.ToPoint();
@@ -114,11 +149,14 @@ namespace Lette.Systems
                 return sheet;
             }
         }
+    }
 
-        public async Task<Tileset> LoadTileset(string src, CancellationToken token)
+    public class TilesetLoader : Loader<Tiles, Tileset>
+    {
+        public override async Task<Tileset> Load(string src, CancellationToken token)
         {
             if (game == null)
-                throw new Exception();
+                throw new NullReferenceException();
             using (var file = File.OpenRead($"Content/img/{ src }/tileset.json"))
             {
                 var tileset = await JsonSerializer.DeserializeAsync<Tileset>(file, options, token);
@@ -128,7 +166,7 @@ namespace Lette.Systems
                 await Task.WhenAll(tileset.Entries.Select(entry => Task.Run(() =>
                 {
                     entry.Texture = Texture2D.FromFile(game.GraphicsDevice, $"Content/img/{ src }/{ entry.Src }");
-                    if (token.IsCancellationRequested) return;
+                    token.ThrowIfCancellationRequested();
                     entry.FrameTime = 1000f / entry.FPS;
 
                     var size = entry.Texture.Size() / tileset.Size;
@@ -142,58 +180,6 @@ namespace Lette.Systems
                     }
                 })).ToList());
                 return tileset;
-            }
-        }
-
-        public void Load<T>(GenArr<T> arr, LoadEntry<T> entry, Func<string, CancellationToken, Task<T>> loader)
-        {
-            entry.TokenSource?.Cancel();
-            entry.TokenSource = new CancellationTokenSource();
-            var token = entry.TokenSource.Token;
-            loader(entry.Src, token).ContinueWith(async res =>
-            {
-                // TODO LOL maybe data race?
-                if (!token.IsCancellationRequested)
-                    arr[entry.Idx] = await res;
-            });
-        }
-
-        public void Run()
-        {
-            if (sprites != null && sheets != null) foreach (var i in sprites)
-            {
-                ref var sprite = ref sprites.Get1(i);
-                if (!sprite.SheetIdx.IsNull)
-                    continue;
-                if (sheetsEntries.TryGetValue(sprite.Src, out var foundEntry))
-                {
-                    sprite.SheetIdx = foundEntry.Idx;
-                }
-                else
-                {
-                    var entry = new LoadEntry<Sheet>(sprite.Src, sheets.Allocator.Alloc());
-                    sprite.SheetIdx = entry.Idx;
-                    sheetsEntries[sprite.Src] = entry;
-                    Load(sheets, entry, LoadSheet);
-                }
-            }
-
-            if (tiles != null && tilesets != null) foreach (var i in tiles)
-            {
-                ref var component = ref tiles.Get1(i);
-                if (!component.TilesetIdx.IsNull)
-                    continue;
-                if (tilesetsEntries.TryGetValue(component.Src, out var foundEntry))
-                {
-                    component.TilesetIdx = foundEntry.Idx;
-                }
-                else
-                {
-                    var entry = new LoadEntry<Tileset>(component.Src, tilesets.Allocator.Alloc());
-                    component.TilesetIdx = entry.Idx;
-                    tilesetsEntries[component.Src] = entry;
-                    Load(tilesets, entry, LoadTileset);
-                }
             }
         }
     }

@@ -9,7 +9,7 @@ namespace Lette.Core
     {
         bool CapturesUpdate { get; }
 
-        void Init(Game game) {}
+        void Init(CossinLette game) {}
         void Update() {}
         void Draw() {}
         void Destroy() {}

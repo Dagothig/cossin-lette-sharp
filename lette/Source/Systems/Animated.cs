@@ -52,14 +52,14 @@ namespace Lette.Systems
                 if (sprite.Entry != entryIdx || sprite.Strip != stripIdx)
                 {
                     animator.Time = 0;
-                    sprite.Tile = 1;
+                    sprite.Tile = 0;
                     sprite.Entry = entryIdx;
                     sprite.Strip = stripIdx;
                 }
                 else
                 {
-                    animator.Time += dt;
-                    if (entry != null) {
+                    if (entry != null && entry.FPS > 0) {
+                        animator.Time += dt;
                         int shift = (int)(animator.Time / entry.FrameTime);
                         animator.Time -= shift * entry.FrameTime;
                         sprite.Tile = (sprite.Tile + shift) % entry.TilesCount;

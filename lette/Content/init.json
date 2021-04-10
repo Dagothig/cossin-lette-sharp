@@ -1,20 +1,26 @@
 {
     "level": "test",
     "player": {
+        "pos": [3, 3],
         "sprite": { "src": "cossin" },
         "animator": {},
         "actor": { "speed": 8 },
         "body": {
             "shape": {
-                "circle": 0.6
+                "type": "circle",
+                "radius": 0.6
             }
         },
         "keyMap": {
             "value": {
                 "left": ["x", -1],
+                "a": ["X", -1],
                 "right": ["x", 1],
+                "d": ["x", 1],
                 "up": ["y", -1],
-                "down": ["y", 1]
+                "w": ["y", -1],
+                "down": ["y", 1],
+                "s": ["y", 1]
             }
         },
         "input": {},

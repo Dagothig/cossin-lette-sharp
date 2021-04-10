@@ -9,11 +9,14 @@ using Lette.Components;
 using Microsoft.Xna.Framework.Input;
 using System.Collections.Generic;
 using Lette.Resources;
+using System.IO;
 
 namespace Lette.States
 {
     public class GameState : IState
     {
+        string initSrc;
+
         EcsWorld? world;
         EcsSystems? updateSystems;
         EcsSystems? drawSystems;
@@ -23,11 +26,17 @@ namespace Lette.States
         SpriteBatch? batch;
         SpatialMap<EcsEntity>? spatialMap;
         Aether.Dynamics.World? physicsWorld;
+        FileSystemWatcher? watcher;
         GenArr<Sheet>? sheets;
         GenArr<Tileset>? tilesets;
         TimeSpan step = TimeSpan.FromSeconds(1) / 60;
 
         public bool CapturesUpdate => true;
+
+        public GameState(string initSrc = "Content/init.json")
+        {
+            this.initSrc = initSrc;
+        }
 
         public void Init(Game game)
         {
@@ -35,13 +44,21 @@ namespace Lette.States
             batch = new SpriteBatch(game.GraphicsDevice);
             spatialMap = new SpatialMap<EcsEntity>(128);
             physicsWorld = new Aether.Dynamics.World(Vector2.Zero);
+            watcher = new()
+            {
+                Path = "Content",
+                IncludeSubdirectories = true,
+                EnableRaisingEvents = true
+            };
             sheets = new GenArr<Sheet>(new GenIdxAllocator());
             tilesets = new GenArr<Tileset>(new GenIdxAllocator());
+
 
             world = new EcsWorld();
 
             updateSystems = new EcsSystems(world)
-                .Add(new Loader())
+                .Add(new SheetLoader())
+                .Add(new TilesetLoader())
                 .Add(new Inputs())
                 .Add(new Actors())
                 .Add(new Physics())
@@ -56,6 +73,7 @@ namespace Lette.States
                 .Add(updateSystems)
                 .Add(drawSystems)
                 .Inject(game)
+                .Inject(watcher)
                 .Inject(sheets)
                 .Inject(tilesets)
                 .Inject(physicsWorld)
@@ -84,9 +102,13 @@ namespace Lette.States
                     Value = new Dictionary<Keys, (InputType, float)>
                     {
                         { Keys.Left, (InputType.X, -1) },
+                        { Keys.A, (InputType.X, -1) },
                         { Keys.Right, (InputType.X, 1) },
+                        { Keys.D, (InputType.X, 1) },
                         { Keys.Up, (InputType.Y, -1) },
-                        { Keys.Down, (InputType.Y, 1) }
+                        { Keys.W, (InputType.Y, -1) },
+                        { Keys.Down, (InputType.Y, 1) },
+                        { Keys.S, (InputType.Y, 1) }
                     }
                 })
                 .Replace(new Input() { Value = EnumArray<InputType, float>.New() })
@@ -119,6 +141,7 @@ namespace Lette.States
             systems?.Destroy();
             world?.Destroy();
             batch?.Dispose();
+            watcher?.Dispose();
         }
     }
 }
