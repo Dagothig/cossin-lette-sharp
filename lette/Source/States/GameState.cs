@@ -70,8 +70,7 @@ namespace Lette.States
                 .Replace(new Sprite { Src = "cossin" })
                 .Replace(new Animator())
                 .Replace(new Actor { Speed = 8, Flags = AnimFlag.DirBR })
-                .Replace(new Body { Shape = BodyShape.Circle(0.6f) })
-                .Replace(new Camera());
+                .Replace(new Body { Shape = BodyShape.Circle(0.6f) });
 
             var cossin = world
                 .NewEntity()
