@@ -15,6 +15,11 @@ namespace Lette.Core
             Names.Zip(Values, (k, v) => new KeyValuePair<string, T>(k, v)));
     }
 
+    public static class Empty<T>
+    {
+        public static T[] Array = new T[0];
+    }
+
     public static class Extensions
     {
         public static Point FFloor(this Vector2 value) =>
@@ -27,9 +32,11 @@ namespace Lette.Core
                 (int)Ceiling(value.X),
                 (int)Ceiling(value.Y));
 
-        public static V GetOrCreate<K, V>(this Dictionary<K, V> dict, K key) where V : new()
+        public static V GetOrCreate<K, V>(this Dictionary<K, V> dict, K key)
+        where K : notnull
+        where V : new()
         {
-            if (!dict.TryGetValue(key, out V val))
+            if (!dict.TryGetValue(key, out V? val))
             {
                 val = new V();
                 dict.Add(key, val);
@@ -94,7 +101,11 @@ namespace Lette.Core
         {
             var res = new T[arr.Length];
             for (var i = 0; i < arr.Length; i++)
-                res[i] = (T)arr.GetValue(i);
+            {
+                var val = arr.GetValue(i);
+                if (val is T)
+                    res[i] = (T)val;
+            }
             return res;
         }
 

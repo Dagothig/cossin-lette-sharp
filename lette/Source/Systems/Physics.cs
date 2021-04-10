@@ -3,6 +3,7 @@ using Leopotam.Ecs;
 using Aether = tainicom.Aether.Physics2D;
 using Lette.Components;
 using Lette.Core;
+using tainicom.Aether.Physics2D.Common;
 
 namespace Lette.Systems
 {
@@ -12,8 +13,16 @@ namespace Lette.Systems
         {
             internal Physics physics;
 
+            public BodiesListener(Physics physics)
+            {
+                this.physics = physics;
+            }
+
             public void OnEntityAdded(in EcsEntity entity)
             {
+                if (physics.world == null)
+                    return;
+
                 ref var body = ref entity.Get<Body>();
                 ref var pos = ref entity.Get<Pos>();
                 Aether.Dynamics.Body physicsBody;
@@ -38,38 +47,65 @@ namespace Lette.Systems
             }
 
             public void OnEntityRemoved(in EcsEntity entity)
-            {
-                ref var body = ref entity.Get<Body>();
-                if (body.Physics != null)
-                {
-                    physics.world.Remove(body.Physics);
-                    body.Physics.Tag = null;
-                }
-            }
+            { }
         }
 
-        Aether.Dynamics.World world = null;
+        public class StaticCollisionsListener : IEcsFilterListener
+        {
+            internal Physics physics;
+
+            public StaticCollisionsListener(Physics physics)
+            {
+                this.physics = physics;
+            }
+
+            public void OnEntityAdded(in EcsEntity entity)
+            {
+                if (physics.world == null)
+                    return;
+
+                ref var staticCollisions = ref entity.Get<StaticCollisions>();
+                ref var pos = ref entity.Get<Pos>();
+
+                staticCollisions.Physics = physics.world.CreateBody(pos);
+                staticCollisions.Physics.Tag = entity;
+
+                foreach (var chain in staticCollisions.Chains)
+                    staticCollisions.Physics.CreateChainShape(new Vertices(chain));
+            }
+
+            public void OnEntityRemoved(in EcsEntity entity)
+            {}
+        }
+
+        Aether.Dynamics.World? world = null;
         TimeSpan step = TimeSpan.MinValue;
-        EcsFilter<Body, Pos> bodies = null;
-        EcsFilter<Actor, Body> actorBodies = null;
-        BodiesListener bodiesListener = null;
+        EcsFilter<Body, Pos>? bodies = null;
+        EcsFilter<Actor, Body>? actorBodies = null;
+        EcsFilter<StaticCollisions>? staticCollisions = null;
+
+        BodiesListener? bodiesListener = null;
+        StaticCollisionsListener? staticCollisionsListener = null;
 
         public void Init()
         {
-            bodiesListener = new BodiesListener() { physics = this };
-            bodies.AddListener(bodiesListener);
+            bodiesListener = new BodiesListener(this);
+            bodies?.AddListener(bodiesListener);
+
+            staticCollisionsListener = new StaticCollisionsListener(this);
+            staticCollisions?.AddListener(staticCollisionsListener);
         }
 
         public void Destroy()
         {
-            bodies.RemoveListener(bodiesListener);
+            bodies?.RemoveListener(bodiesListener);
         }
 
         public void Run()
         {
-            world.Step(step);
+            world?.Step(step);
 
-            foreach (var i in bodies)
+            if (bodies != null) foreach (var i in bodies)
             {
                 ref var entity = ref bodies.GetEntity(i);
                 ref var body = ref bodies.Get1(i);
@@ -77,7 +113,7 @@ namespace Lette.Systems
                     entity.Replace<Pos>(body.Physics.Position);
             }
 
-            foreach (var i in actorBodies)
+            if (actorBodies != null) foreach (var i in actorBodies)
             {
                 ref var actor = ref actorBodies.Get1(i);
                 ref var body = ref actorBodies.Get2(i);

@@ -2,25 +2,27 @@ using System;
 using Lette.Components;
 using Leopotam.Ecs;
 using Lette.Resources;
+using Lette.Core;
 
 namespace Lette.Systems
 {
     public class Animated : IEcsRunSystem
     {
-        EcsFilter<Sprite, Animator> animatedSprites = null;
-        EcsFilter<Tiles> animatedTiles = null;
+        EcsFilter<Sprite, Animator>? animatedSprites = null;
+        GenArr<Sheet>? sheets = null;
+        GenArr<Tileset>? tilesets = null;
         TimeSpan step = TimeSpan.MinValue;
 
         public void Run()
         {
             var dt = (float)step.TotalMilliseconds;
 
-            foreach (var i in animatedSprites)
+            if (animatedSprites != null) foreach (var i in animatedSprites)
             {
                 ref var sprite = ref animatedSprites.Get1(i);
                 ref var animator = ref animatedSprites.Get2(i);
 
-                var sheet = sprite.Sheet;
+                var sheet = sheets?[sprite.SheetIdx];
                 if (sheet == null)
                     continue;
                 var flags = animator.Flags;
@@ -28,11 +30,11 @@ namespace Lette.Systems
                 // TODO - This is bad
 
                 var entryIdx = 0;
-                SheetEntry entry = null;
-                for (var ei = 0; ei < sprite.Sheet.Entries.Length; ei++)
+                SheetEntry? entry = null;
+                for (var ei = 0; ei < sheet.Entries.Length; ei++)
                 {
-                    entry = sprite.Sheet.Entries[ei];
-                    if (flags.Matches(sprite.Sheet.Entries[ei].Flags))
+                    entry = sheet.Entries[ei];
+                    if (flags.Matches(sheet.Entries[ei].Flags))
                     {
                         entryIdx = ei;
                         break;
@@ -40,7 +42,7 @@ namespace Lette.Systems
                 }
 
                 var stripIdx = 0;
-                for (var si = 0; si < entry.Strips.Length; si++)
+                for (var si = 0; si < entry?.Strips?.Length; si++)
                     if (flags.Matches(entry.Strips[si].Flags))
                     {
                         stripIdx = si;
@@ -57,19 +59,16 @@ namespace Lette.Systems
                 else
                 {
                     animator.Time += dt;
-                    int shift = (int)(animator.Time / entry.FrameTime);
-                    animator.Time -= shift * entry.FrameTime;
-                    sprite.Tile = (sprite.Tile + shift) % entry.TilesCount;
+                    if (entry != null) {
+                        int shift = (int)(animator.Time / entry.FrameTime);
+                        animator.Time -= shift * entry.FrameTime;
+                        sprite.Tile = (sprite.Tile + shift) % entry.TilesCount;
+                    }
                 }
             }
 
-            foreach (var i in animatedTiles)
+            if (tilesets != null) foreach (var tileset in tilesets)
             {
-                ref var tiles = ref animatedTiles.Get1(i);
-                var tileset = tiles.Tileset;
-                if (tileset == null)
-                    continue;
-
                 foreach (var entry in tileset.Entries)
                 {
                     entry.Time += dt;

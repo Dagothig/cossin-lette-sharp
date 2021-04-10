@@ -5,7 +5,7 @@ using Microsoft.Xna.Framework;
 
 namespace Lette.Core
 {
-    public struct SpatialEntry<T> : IEquatable<SpatialEntry<T>>
+    public struct SpatialEntry<T> : IEquatable<SpatialEntry<T>> where T : notnull
     {
         public AABB Bounds;
         public T Value;
@@ -17,7 +17,7 @@ namespace Lette.Core
             $"[{ Bounds }:{ Value }]";
     }
 
-    public class SpatialMap<T> : IEqualityComparer<T> where T : IEquatable<T>
+    public class SpatialMap<T> : IEqualityComparer<T> where T : notnull, IEquatable<T>
     {
         public float CellSize;
         public Dictionary<Point, List<SpatialEntry<T>>> Backing = new Dictionary<Point, List<SpatialEntry<T>>>();
@@ -27,7 +27,7 @@ namespace Lette.Core
             CellSize = cellSize;
         }
 
-        public bool Equals(T x, T y) => x.Equals(y);
+        public bool Equals(T? x, T? y) => x?.Equals(y) ?? y == null;
         public int GetHashCode(T obj) => obj.GetHashCode();
 
         public Rectangle Indices(AABB bounds) =>

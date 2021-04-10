@@ -10,159 +10,44 @@ using Microsoft.Xna.Framework;
 using System.Linq;
 using Tile = Lette.Resources.Tile;
 using Lette.Core;
-using System.Text.Json.Serialization;
 using System;
+using System.Threading;
 
 namespace Lette.Systems
 {
-    public class PointConverter : JsonConverter<Point>
+    public class LoadEntry<T>
     {
-        public override Point Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        {
-            if (reader.TokenType != JsonTokenType.StartArray)
-                throw new Exception();
-            int x, y;
-            if (!reader.Read() || reader.TokenType != JsonTokenType.Number)
-                throw new Exception();
-            x = reader.GetInt32();
-            if (!reader.Read() || reader.TokenType != JsonTokenType.Number)
-                throw new Exception();
-            y = reader.GetInt32();
-            if (!reader.Read() || reader.TokenType != JsonTokenType.EndArray)
-                throw new Exception();
-            return new Point(x, y);
-        }
+        public readonly string Src;
+        public readonly GenIdx Idx;
+        public CancellationTokenSource? TokenSource;
 
-        public override void Write(Utf8JsonWriter writer, Point value, JsonSerializerOptions options)
+        public LoadEntry(string src, GenIdx idx)
         {
-            writer.WriteStartArray();
-            writer.WriteNumberValue(value.X);
-            writer.WriteNumberValue(value.Y);
-            writer.WriteEndArray();
-        }
-    }
-
-    public class Vector2Converter : JsonConverter<Vector2>
-    {
-        public override Vector2 Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        {
-            if (reader.TokenType != JsonTokenType.StartArray)
-                throw new Exception();
-            float x, y;
-            if (!reader.Read() || reader.TokenType != JsonTokenType.Number)
-                throw new Exception();
-            x = (float)reader.GetDouble();
-            if (!reader.Read() || reader.TokenType != JsonTokenType.Number)
-                throw new Exception();
-            y = (float)reader.GetDouble();
-            if (!reader.Read() || reader.TokenType != JsonTokenType.EndArray)
-                throw new Exception();
-            return new Vector2(x, y);
-        }
-
-        public override void Write(Utf8JsonWriter writer, Vector2 value, JsonSerializerOptions options)
-        {
-            writer.WriteStartArray();
-            writer.WriteNumberValue(value.X);
-            writer.WriteNumberValue(value.Y);
-            writer.WriteEndArray();
-        }
-    }
-
-    public class RectangleConverter : JsonConverter<Rectangle>
-    {
-        public override Rectangle Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        {
-            if (reader.TokenType != JsonTokenType.StartArray)
-                throw new Exception();
-            int x, y, w, h;
-            if (!reader.Read() || reader.TokenType != JsonTokenType.Number)
-                throw new Exception();
-            x = reader.GetInt32();
-            if (!reader.Read() || reader.TokenType != JsonTokenType.Number)
-                throw new Exception();
-            y = reader.GetInt32();
-            if (!reader.Read() || reader.TokenType != JsonTokenType.Number)
-                throw new Exception();
-            w = reader.GetInt32();
-            if (!reader.Read() || reader.TokenType != JsonTokenType.Number)
-                throw new Exception();
-            h = reader.GetInt32();
-            if (!reader.Read() || reader.TokenType != JsonTokenType.EndArray)
-                throw new Exception();
-            return new Rectangle(x, y, w, h);
-        }
-        public override void Write(Utf8JsonWriter writer, Rectangle value, JsonSerializerOptions options)
-        {
-            writer.WriteStartArray();
-            writer.WriteNumberValue(value.X);
-            writer.WriteNumberValue(value.Y);
-            writer.WriteNumberValue(value.Width);
-            writer.WriteNumberValue(value.Height);
-            writer.WriteEndArray();
-        }
-    }
-
-    public class FlagsConverter<T> : JsonConverter<Flags<T>> where T : struct, IConvertible
-    {
-        public override Flags<T> Read(ref Utf8JsonReader reader, System.Type typeToConvert, JsonSerializerOptions options)
-        {
-            if (reader.TokenType != JsonTokenType.StartArray)
-                throw new Exception();
-            var flags = Flags<T>.New();
-            while (reader.Read() && reader.TokenType == JsonTokenType.String)
-            {
-                var name = reader.GetString();
-                if (Enum<T>.Map.TryGetValue(name, out var value))
-                    flags[value] = true;
-                else
-                    throw new Exception();
-            }
-            if (reader.TokenType != JsonTokenType.EndArray)
-                throw new Exception();
-            return flags;
-        }
-
-        public override void Write(Utf8JsonWriter writer, Flags<T> value, JsonSerializerOptions options)
-        {
-            writer.WriteStartArray();
-            foreach (var (name, flag) in value.Entries)
-                writer.WriteStringValue(name);
-            writer.WriteEndArray();
-
+            Src = src;
+            Idx = idx;
         }
     }
 
     public class Loader : IEcsInitSystem, IEcsRunSystem, IEcsDestroySystem
     {
-        JsonSerializerOptions options = null;
-        FileSystemWatcher watcher = null;
+        JsonSerializerOptions? options = null;
+        FileSystemWatcher? watcher = null;
 
-        Game game = null;
-        EcsFilter<Sprite> sprites = null;
-        EcsFilter<Tiles> tiles = null;
+        Game? game = null;
+        EcsFilter<Sprite>? sprites = null;
+        EcsFilter<Tiles>? tiles = null;
 
-        Dictionary<string, Task<Sheet>> sheets = new();
-        Dictionary<string, Task<Tileset>> tilesets = new();
+        GenArr<Sheet>? sheets = null;
+        GenArr<Tileset>? tilesets = null;
+        Dictionary<string, LoadEntry<Sheet>> sheetsEntries = new();
+        Dictionary<string, LoadEntry<Tileset>> tilesetsEntries = new();
 
         public void Init()
         {
-            options = new JsonSerializerOptions()
-            {
-                AllowTrailingCommas = true,
-                IgnoreNullValues = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                IncludeFields = true,
-                WriteIndented = true,
-            };
-
-            options.Converters.Add(new PointConverter());
-            options.Converters.Add(new Vector2Converter());
-            options.Converters.Add(new RectangleConverter());
-            options.Converters.Add(new FlagsConverter<AnimFlag>());
+            options = JsonSerialization.GetOptions();
 
             // TODO This should only be in debug
-            FileSystemWatcher watcher = new()
+            watcher = new()
             {
                 Path = "Content",
                 IncludeSubdirectories = true,
@@ -174,35 +59,39 @@ namespace Lette.Systems
 
         public void Destroy()
         {
-            watcher.Dispose();
+            watcher?.Dispose();
+            watcher = null;
         }
 
         public void OnChanged(object sender, FileSystemEventArgs e)
         {
-            e.Name.Split("/", 4).Take(out var folder, out var type, out var resource);
+            if (e.Name == null)
+                return;
+            e.Name.Split("/").Take(out var type, out var resource);
 
-            if (folder == "Content" && type == "img")
+            if (type == "img")
             {
-                if (sheets.TryGetValue(resource, out var sheet))
-                {
-                    sheets[resource] = LoadSheet(resource);
-                }
-                else if (tilesets.TryGetValue(resource, out var tileset))
-                {
-                    tilesets[resource] = LoadTileset(resource);
-                }
+                if (sheetsEntries.TryGetValue(resource, out var sheetEntry) && sheets != null)
+                    Load(sheets, sheetEntry, LoadSheet);
+                else if (tilesetsEntries.TryGetValue(resource, out var tilesetEntry) && tilesets != null)
+                    Load(tilesets, tilesetEntry, LoadTileset);
             }
         }
 
-        public async Task<Sheet> LoadSheet(string src)
+        public async Task<Sheet> LoadSheet(string src, CancellationToken token)
         {
+            if (game == null)
+                throw new Exception();
             using (var file = File.OpenRead($"Content/img/{ src }/sheet.json"))
             {
-                var sheet = await JsonSerializer.DeserializeAsync<Sheet>(file, options);
+                var sheet = await JsonSerializer.DeserializeAsync<Sheet>(file, options, token);
+                if (sheet == null)
+                    throw new Exception();
                 sheet.Src = src;
                 await Task.WhenAll(sheet.Entries.Select(entry => Task.Run(() =>
                 {
                     entry.Texture = Texture2D.FromFile(game.GraphicsDevice, $"Content/img/{ src }/{ entry.Src }");
+                    if (token.IsCancellationRequested) return;
                     entry.FrameTime = 1000f / entry.FPS;
                     entry.TilesCount = (int)(entry.Texture.Width / entry.Size.X);
                     var ptSize = entry.Size.ToPoint();
@@ -226,15 +115,20 @@ namespace Lette.Systems
             }
         }
 
-        public async Task<Tileset> LoadTileset(string src)
+        public async Task<Tileset> LoadTileset(string src, CancellationToken token)
         {
+            if (game == null)
+                throw new Exception();
             using (var file = File.OpenRead($"Content/img/{ src }/tileset.json"))
             {
-                var tileset = await JsonSerializer.DeserializeAsync<Tileset>(file, options);
+                var tileset = await JsonSerializer.DeserializeAsync<Tileset>(file, options, token);
+                if (tileset == null)
+                    throw new Exception();
                 tileset.Src = src;
                 await Task.WhenAll(tileset.Entries.Select(entry => Task.Run(() =>
                 {
                     entry.Texture = Texture2D.FromFile(game.GraphicsDevice, $"Content/img/{ src }/{ entry.Src }");
+                    if (token.IsCancellationRequested) return;
                     entry.FrameTime = 1000f / entry.FPS;
 
                     var size = entry.Texture.Size() / tileset.Size;
@@ -251,35 +145,54 @@ namespace Lette.Systems
             }
         }
 
+        public void Load<T>(GenArr<T> arr, LoadEntry<T> entry, Func<string, CancellationToken, Task<T>> loader)
+        {
+            entry.TokenSource?.Cancel();
+            entry.TokenSource = new CancellationTokenSource();
+            var token = entry.TokenSource.Token;
+            loader(entry.Src, token).ContinueWith(async res =>
+            {
+                // TODO LOL maybe data race?
+                if (!token.IsCancellationRequested)
+                    arr[entry.Idx] = await res;
+            });
+        }
+
         public void Run()
         {
-            foreach (var i in sprites)
+            if (sprites != null && sheets != null) foreach (var i in sprites)
             {
                 ref var sprite = ref sprites.Get1(i);
-                if (sprite.Sheet?.Src != sprite.Src)
+                if (!sprite.SheetIdx.IsNull)
+                    continue;
+                if (sheetsEntries.TryGetValue(sprite.Src, out var foundEntry))
                 {
-                    if (sheets.TryGetValue(sprite.Src, out var task))
-                    {
-                        if (task.IsCompletedSuccessfully)
-                            sprite.Sheet = task.Result;
-                    }
-                    else
-                        sheets[sprite.Src] = LoadSheet(sprite.Src);
+                    sprite.SheetIdx = foundEntry.Idx;
+                }
+                else
+                {
+                    var entry = new LoadEntry<Sheet>(sprite.Src, sheets.Allocator.Alloc());
+                    sprite.SheetIdx = entry.Idx;
+                    sheetsEntries[sprite.Src] = entry;
+                    Load(sheets, entry, LoadSheet);
                 }
             }
 
-            foreach (var i in tiles)
+            if (tiles != null && tilesets != null) foreach (var i in tiles)
             {
                 ref var component = ref tiles.Get1(i);
-                if (component.Tileset?.Src != component.Src)
+                if (!component.TilesetIdx.IsNull)
+                    continue;
+                if (tilesetsEntries.TryGetValue(component.Src, out var foundEntry))
                 {
-                    if (tilesets.TryGetValue(component.Src, out var task))
-                    {
-                        if (task.IsCompletedSuccessfully)
-                            component.Tileset = task.Result;
-                    }
-                    else
-                        tilesets[component.Src] = LoadTileset(component.Src);
+                    component.TilesetIdx = foundEntry.Idx;
+                }
+                else
+                {
+                    var entry = new LoadEntry<Tileset>(component.Src, tilesets.Allocator.Alloc());
+                    component.TilesetIdx = entry.Idx;
+                    tilesetsEntries[component.Src] = entry;
+                    Load(tilesets, entry, LoadTileset);
                 }
             }
         }

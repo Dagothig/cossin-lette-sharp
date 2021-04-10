@@ -14,29 +14,29 @@ namespace Lette.States
 {
     public class GameState : IState
     {
-        EcsWorld world;
-        EcsSystems updateSystems;
-        EcsSystems drawSystems;
-        EcsSystems systems;
+        EcsWorld? world;
+        EcsSystems? updateSystems;
+        EcsSystems? drawSystems;
+        EcsSystems? systems;
 
-        CossinLette game;
-        SpriteBatch batch;
-        SpatialMap<EcsEntity> spatialMap;
-        Aether.Dynamics.World physicsWorld;
+        Game? game;
+        SpriteBatch? batch;
+        SpatialMap<EcsEntity>? spatialMap;
+        Aether.Dynamics.World? physicsWorld;
+        GenArr<Sheet>? sheets;
+        GenArr<Tileset>? tilesets;
         TimeSpan step = TimeSpan.FromSeconds(1) / 60;
 
         public bool CapturesUpdate => true;
 
-        public GameState(CossinLette game)
-        {
-            this.game = game;
-        }
-
         public void Init(Game game)
         {
+            this.game = game;
             batch = new SpriteBatch(game.GraphicsDevice);
             spatialMap = new SpatialMap<EcsEntity>(128);
             physicsWorld = new Aether.Dynamics.World(Vector2.Zero);
+            sheets = new GenArr<Sheet>(new GenIdxAllocator());
+            tilesets = new GenArr<Tileset>(new GenIdxAllocator());
 
             world = new EcsWorld();
 
@@ -56,6 +56,8 @@ namespace Lette.States
                 .Add(updateSystems)
                 .Add(drawSystems)
                 .Inject(game)
+                .Inject(sheets)
+                .Inject(tilesets)
                 .Inject(physicsWorld)
                 .Inject(spatialMap)
                 .Inject(step);
@@ -106,18 +108,18 @@ namespace Lette.States
 
         public void Update()
         {
-            updateSystems.Run();
+            updateSystems?.Run();
         }
         public void Draw()
         {
-            drawSystems.Run();
+            drawSystems?.Run();
         }
 
         public void Destroy()
         {
-            systems.Destroy();
-            world.Destroy();
-            batch.Dispose();
+            systems?.Destroy();
+            world?.Destroy();
+            batch?.Dispose();
         }
     }
 }

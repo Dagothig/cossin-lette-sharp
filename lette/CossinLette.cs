@@ -17,7 +17,7 @@ namespace Lette
         public CossinLette()
         {
             Graphics = new GraphicsDeviceManager(this);
-            QueuedStates.Enqueue(new GameState(this));
+            QueuedStates.Enqueue(new GameState());
         }
 
         protected override void Initialize()

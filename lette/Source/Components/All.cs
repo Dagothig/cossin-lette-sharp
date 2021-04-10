@@ -1,6 +1,6 @@
 using System.Collections.Generic;
+using Leopotam.Ecs;
 using Lette.Core;
-using Lette.Resources;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Aether = tainicom.Aether.Physics2D;
@@ -10,7 +10,7 @@ namespace Lette.Components
     public struct Sprite
     {
         public string Src;
-        public Sheet Sheet;
+        public GenIdx SheetIdx;
         public int Entry;
         public int Strip;
         public int Tile;
@@ -26,7 +26,7 @@ namespace Lette.Components
     public struct Tiles
     {
         public string Src;
-        public Tileset Tileset;
+        public GenIdx TilesetIdx;
         public Tile[,,] Idx;
 
         public static Tile[,,] GenerateIdx(int w, int h, int d, params int[] exys)
@@ -77,10 +77,28 @@ namespace Lette.Components
             Radius = radius
         };
     }
-    public struct Body
+    public struct Body : IEcsAutoReset<Body>
     {
         public BodyShape Shape;
-        public Aether.Dynamics.Body Physics;
+        public Aether.Dynamics.Body? Physics;
+
+        public void AutoReset(ref Body c)
+        {
+            c.Physics?.World.Remove(Physics);
+            c.Physics = null;
+        }
+    }
+
+    public struct StaticCollisions : IEcsAutoReset<Body>
+    {
+        public List<Vector2[]> Chains;
+        public Aether.Dynamics.Body? Physics;
+
+        public void AutoReset(ref Body c)
+        {
+            c.Physics?.World.Remove(Physics);
+            c.Physics = null;
+        }
     }
 
     public struct Actor
@@ -101,4 +119,9 @@ namespace Lette.Components
 
     public struct Camera
     { }
+
+    public struct Owner
+    {
+        public EcsEntity Value;
+    }
 }

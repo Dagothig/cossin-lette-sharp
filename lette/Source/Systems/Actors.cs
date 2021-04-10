@@ -9,13 +9,13 @@ namespace Lette.Systems
 {
     public class Actors : IEcsRunSystem
     {
-        EcsFilter<Actor, Input> actorInputs = null;
-        EcsFilter<Actor, Animator> actorAnimators = null;
-        EcsFilter<Actor, Body> actorBodies = null;
+        EcsFilter<Actor, Input>? actorInputs = null;
+        EcsFilter<Actor, Animator>? actorAnimators = null;
+        EcsFilter<Actor, Body>? actorBodies = null;
 
         public void Run()
         {
-            foreach (var i in actorInputs)
+            if (actorInputs != null) foreach (var i in actorInputs)
             {
                 ref var actor = ref actorInputs.Get1(i);
                 ref var input = ref actorInputs.Get2(i);
@@ -31,7 +31,7 @@ namespace Lette.Systems
                 }
             }
 
-            foreach (var i in actorAnimators)
+            if (actorAnimators != null) foreach (var i in actorAnimators)
             {
                 ref var actor = ref actorAnimators.Get1(i);
                 ref var animator = ref actorAnimators.Get2(i);
@@ -39,7 +39,7 @@ namespace Lette.Systems
                 animator.Flags = actor.Flags;
             }
 
-            foreach (var i in actorBodies)
+            if (actorBodies != null) foreach (var i in actorBodies)
             {
                 ref var actor = ref actorBodies.Get1(i);
                 ref var body = ref actorBodies.Get2(i);

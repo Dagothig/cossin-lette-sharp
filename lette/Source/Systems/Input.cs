@@ -7,12 +7,12 @@ namespace Lette.Systems
 {
     public class Inputs : IEcsRunSystem
     {
-        EcsFilter<Input> inputs = null;
-        EcsFilter<KeyMap, Input> keysInputs = null;
+        EcsFilter<Input>? inputs = null;
+        EcsFilter<KeyMap, Input>? keysInputs = null;
 
         public void Run()
         {
-            foreach (var i in inputs)
+            if (inputs != null) foreach (var i in inputs)
             {
                 ref var input = ref inputs.Get1(i);
 
@@ -21,7 +21,7 @@ namespace Lette.Systems
             }
 
             var keyboardState = Keyboard.GetState();
-            foreach (var i in keysInputs)
+            if (keysInputs != null) foreach (var i in keysInputs)
             {
                 ref var keyMap = ref keysInputs.Get1(i);
                 ref var input = ref keysInputs.Get2(i);

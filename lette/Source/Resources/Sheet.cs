@@ -16,17 +16,17 @@ namespace Lette.Resources
     public class Strip
     {
         public Flags<AnimFlag> Flags;
-        public Tile[] Tiles;
+        public Tile[] Tiles = Empty<Tile>.Array;
     }
 
     public class SheetEntry
     {
-        public string Src;
+        public string Src = string.Empty;
         public Vector2 Size;
         public Vector2 Decal;
         public float FPS;
         public Flags<AnimFlag> Flags;
-        public (Flags<AnimFlag>, Vector2)[][] StripsVariants;
+        public (Flags<AnimFlag>, Vector2)[][] StripsVariants = Empty<(Flags<AnimFlag>, Vector2)[]>.Array;
 
         public string StripsVariantsPreset
         {
@@ -36,7 +36,7 @@ namespace Lette.Resources
         }
 
         [JsonIgnore]
-        public Texture2D Texture;
+        public Texture2D? Texture;
 
         [JsonIgnore]
         public float FrameTime;
@@ -45,7 +45,7 @@ namespace Lette.Resources
         public int TilesCount;
 
         [JsonIgnore]
-        public Strip[] Strips;
+        public Strip[] Strips = Empty<Strip>.Array;
     }
 
     public class Sheet
@@ -84,7 +84,7 @@ namespace Lette.Resources
                 }
             };
 
-        public string Src;
-        public SheetEntry[] Entries;
+        public string Src = string.Empty;
+        public SheetEntry[] Entries = Empty<SheetEntry>.Array;
     }
 }

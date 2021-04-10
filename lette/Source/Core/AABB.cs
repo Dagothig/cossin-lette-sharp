@@ -42,7 +42,7 @@ namespace Lette.Core
                 Max = new Vector2(Min(Max.X, other.Max.X), Min(Max.Y, other.Max.Y))
             };
 
-        public override bool Equals(object other) =>
+        public override bool Equals(object? other) =>
             other is AABB && this == (AABB)other;
 
         public override int GetHashCode() =>

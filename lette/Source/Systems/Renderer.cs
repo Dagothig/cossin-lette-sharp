@@ -2,6 +2,7 @@ using System;
 using Leopotam.Ecs;
 using Lette.Components;
 using Lette.Core;
+using Lette.Resources;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using static System.MathF;
@@ -10,25 +11,34 @@ namespace Lette.Systems
 {
     public class Renderer : IEcsRunSystem
     {
-        SpriteBatch batch = null;
-        CossinLette game = null;
-        SpatialMap<EcsEntity> spatialMap = null;
-        EcsFilter<Tiles, Pos> positionedTiles = null;
-        EcsFilter<Camera, Pos> cameras = null;
+        SpriteBatch? batch = null;
+        CossinLette? game = null;
+        SpatialMap<EcsEntity>? spatialMap = null;
+        EcsFilter<Tiles, Pos>? positionedTiles = null;
+        EcsFilter<Camera, Pos>? cameras = null;
+        GenArr<Tileset>? tilesets= null;
+        GenArr<Sheet>? sheets = null;
 
         public void RenderSprites(AABB region, float zend, float zextent)
         {
-            foreach (var entity in spatialMap.Region(region)) {
+            if (spatialMap != null && batch != null) foreach (var entity in spatialMap.Region(region))
+            {
                 // TODO 'A fonciton juste parce que ya que les sprites qui ont des AABBs
                 var entityPos = entity.Get<Pos>().Value * Constants.PIXELS_PER_METER;
                 ref var sprite = ref entity.Get<Sprite>();
 
-                var sheet = sprite.Sheet;
+                // TODO AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaa
+
+                var sheet = sheets?[sprite.SheetIdx];
                 if (sheet == null)
                     continue;
-                var entry = sheet.Entries[sprite.Entry];
-                var strip = entry.Strips[sprite.Strip];
-                var tile = strip.Tiles[sprite.Tile];
+                var entry = sheet.Entries[sprite.Entry % sheet.Entries.Length];
+                if (entry == null || entry.Texture == null)
+                    continue;
+                var strip = entry.Strips[sprite.Strip % entry.Strips.Length];
+                var tile = strip?.Tiles[sprite.Tile % strip.Tiles.Length];
+                if (tile == null)
+                    continue;
 
                 batch.Draw(
                     entry.Texture,
@@ -45,11 +55,11 @@ namespace Lette.Systems
 
         public void RenderTilesets(AABB region, float zend, float zextent)
         {
-            foreach (var j in positionedTiles)
+            if (positionedTiles != null && batch != null) foreach (var j in positionedTiles)
             {
                 ref var tiles = ref positionedTiles.Get1(j);
-                var tileset = tiles.Tileset;
-                if (tileset == null)
+                var tileset = tilesets?[tiles.TilesetIdx];
+                if (tileset == null || tileset.Entries == null)
                     continue;
 
                 var tileSize = tileset.Size.ToVector2();
@@ -96,6 +106,8 @@ namespace Lette.Systems
 
         public void Run()
         {
+            if (game == null || cameras == null || batch == null)
+                return;
             var viewport = game.GraphicsDevice.Viewport;
             var bounds = game.GraphicsDevice.Viewport.Bounds;
             var n = cameras.GetEntitiesCount();
