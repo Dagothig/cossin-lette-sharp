@@ -23,6 +23,7 @@ namespace Lette
         protected override void Initialize()
         {
             Window.Title = "Cossin Lette";
+
             base.Initialize();
         }
 

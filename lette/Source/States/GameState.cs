@@ -22,7 +22,7 @@ namespace Lette.States
         EcsSystems? drawSystems;
         EcsSystems? systems;
 
-        Game? game;
+        CossinLette? game;
         SpriteBatch? batch;
         SpatialMap<EcsEntity>? spatialMap;
         Aether.Dynamics.World? physicsWorld;
@@ -38,7 +38,7 @@ namespace Lette.States
             this.initSrc = initSrc;
         }
 
-        public void Init(Game game)
+        public void Init(CossinLette game)
         {
             this.game = game;
             batch = new SpriteBatch(game.GraphicsDevice);
@@ -52,7 +52,6 @@ namespace Lette.States
             };
             sheets = new GenArr<Sheet>(new GenIdxAllocator());
             tilesets = new GenArr<Tileset>(new GenIdxAllocator());
-
 
             world = new EcsWorld();
 
@@ -123,6 +122,13 @@ namespace Lette.States
                         5, 0, 0, 3, 5, 1, 0, 3, 5, 2, 0, 3,
                         5, 0, 1, 2, 5, 1, 1, 2, 5, 2, 1, 2,
                         5, 0, 2, 1, 5, 1, 2, 1, 5, 2, 2, 1)
+                })
+                .Replace(new StaticCollisions
+                {
+                    Chains = new()
+                    {
+                        new Vector2[] { new(0, 2) }
+                    }
                 })
                 .Replace<Pos>(new Vector2(0, 0));
         }
