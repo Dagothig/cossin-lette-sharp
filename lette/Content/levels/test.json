@@ -24,6 +24,13 @@
                     5, 0, 2, 1, 5, 1, 2, 1, 5, 2, 2, 1
                 ]
             }
+        },
+        {
+            "pos": [2, 2],
+            "sprite": { "src": "cossin" },
+            "animator": {},
+            "actor": { "speed": 8, "flags": ["DirBR"] },
+            "body": { "shape": { "type": 0, "radius": 0.6 } }
         }
     ]
 }
