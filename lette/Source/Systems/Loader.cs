@@ -183,4 +183,21 @@ namespace Lette.Systems
             }
         }
     }
+
+    public class LevelLoader : IEcsRunSystem
+    {
+        EcsWorld? world;
+
+        public void Run()
+        {
+            LevelDefinition ldef = new();
+
+            if (world != null) foreach (var edef in ldef.Entities)
+            {
+                var entity = world.NewEntity();
+                foreach (var component in edef)
+                    component.Replace(entity);
+            }
+        }
+    }
 }

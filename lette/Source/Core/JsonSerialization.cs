@@ -1,7 +1,13 @@
 using System.Text.Json.Serialization;
+using System.Collections.Generic;
 using System;
 using Microsoft.Xna.Framework;
 using System.Text.Json;
+using Lette.Resources;
+using System.Reflection;
+using System.Linq;
+using Lette.Components;
+using Microsoft.Xna.Framework.Input;
 
 namespace Lette.Core
 {
@@ -123,6 +129,112 @@ namespace Lette.Core
         }
     }
 
+    public class ValueConverter<T, V> : JsonConverter<T> where T : IValue<V>, new()
+    {
+        public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            var value = JsonSerializer.Deserialize<V>(ref reader, options);
+            if (value == null)
+                throw new Exception();
+            return new() { Value = value };
+        }
+
+        public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class Vec2ArrConverter : JsonConverter<Vector2[]>
+    {
+        public override Vector2[]? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+            JsonSerializer
+            .Deserialize<float[]>(ref reader, options)?
+            .Select2((x, y) =>  new Vector2(x, y))
+            .ToArray();
+
+        public override void Write(Utf8JsonWriter writer, Vector2[] value, JsonSerializerOptions options)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class TilesConverter : JsonConverter<Components.Tile[,,]>
+    {
+        public override Components.Tile[,,]? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            if (reader.TokenType != JsonTokenType.StartArray)
+                throw new Exception();
+            reader
+                .Advance(out var w)
+                .Advance(out var h)
+                .Advance(out var d);
+            var idx = new Components.Tile[w, h, d];
+            for (var x = 0; x < w; x++)
+                for (var y = 0; y < h; y++)
+                    for (var z = 0; z < d; z++)
+                    {
+                        reader
+                            .Advance(out var entry)
+                            .Advance(out var px)
+                            .Advance(out var py)
+                            .Advance(out var height);
+
+                        idx[x, y, z] = new Components.Tile()
+                        {
+                            Entry = entry,
+                            Idx = new Point(px, py),
+                            Height = height
+                        };
+                    }
+
+            if (!reader.Read() || reader.TokenType != JsonTokenType.EndArray)
+                throw new Exception();
+            return idx;
+        }
+
+        public override void Write(Utf8JsonWriter writer, Components.Tile[,,] value, JsonSerializerOptions options)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class EntityConverter : JsonConverter<EntityDefinition>
+    {
+        static readonly Dictionary<string, Type> ComponentTypes = Assembly
+            .GetExecutingAssembly()
+            .GetTypes()
+            .Where(t => t.IsAssignableTo(typeof(IReplaceOnEntity)))
+            .ToDictionary(value => value.Name.ToCamel());
+
+        public override EntityDefinition? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            if (reader.TokenType != JsonTokenType.StartObject)
+                throw new Exception();
+            var def = new EntityDefinition();
+            while (reader.Read() && reader.TokenType == JsonTokenType.PropertyName)
+            {
+                var name = reader.GetString();
+                if (!(name is string))
+                    throw new Exception();
+                var type = ComponentTypes[name];
+                var value = JsonSerializer.Deserialize(ref reader, type, options) as IReplaceOnEntity;
+                if (value == null)
+                    throw new Exception();
+                def.Add(value);
+            }
+            if (reader.TokenType != JsonTokenType.EndObject)
+                throw new Exception();
+            return def;
+
+        }
+
+        public override void Write(Utf8JsonWriter writer, EntityDefinition value, JsonSerializerOptions options)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
     public static class JsonSerialization
     {
         public static JsonSerializerOptions GetOptions()
@@ -140,6 +252,11 @@ namespace Lette.Core
             options.Converters.Add(new Vector2Converter());
             options.Converters.Add(new RectangleConverter());
             options.Converters.Add(new FlagsConverter<AnimFlag>());
+            options.Converters.Add(new EntityConverter());
+            options.Converters.Add(new ValueConverter<Pos, Vector2>());
+            options.Converters.Add(new ValueConverter<KeyMap, Dictionary<Keys, (InputType, float)>>());
+            options.Converters.Add(new ValueConverter<Input, EnumArray<InputType, float>>());
+            //options.Converters.Add(new)
 
             return options;
         }

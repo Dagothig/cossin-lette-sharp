@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using static System.MathF;
@@ -97,6 +98,19 @@ namespace Lette.Core
             d = arr[3];
         }
 
+        public static IEnumerable<R> Select2<T, R>(this IEnumerable<T> source, Func<T, T, R> select)
+        {
+            var enumerator = source.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                var x = enumerator.Current;
+                if (!enumerator.MoveNext())
+                    break;
+                var y = enumerator.Current;
+                yield return select(x, y);
+            }
+        }
+
         public static T[] Of<T>(this Array arr)
         {
             var res = new T[arr.Length];
@@ -107,6 +121,14 @@ namespace Lette.Core
                     res[i] = (T)val;
             }
             return res;
+        }
+
+        public static ref Utf8JsonReader Advance(this ref Utf8JsonReader reader, out int num)
+        {
+            if (!reader.Read() || reader.TokenType != JsonTokenType.Number)
+                throw new Exception();
+            num = reader.GetInt32();
+            return ref reader;
         }
 
         public static float Angle(this Flags<AnimFlag> flags) =>
@@ -126,5 +148,8 @@ namespace Lette.Core
 
         public static Point Size<T>(this T[,] arr) =>
             new Point(arr.GetLength(0), arr.GetLength(1));
+
+        public static string ToCamel(this string str) =>
+            Char.ToLowerInvariant(str[0]) + str.Substring(1);
     }
 }

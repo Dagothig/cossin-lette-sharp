@@ -10,6 +10,7 @@ using Microsoft.Xna.Framework.Input;
 using System.Collections.Generic;
 using Lette.Resources;
 using System.IO;
+using System.Text.Json;
 
 namespace Lette.States
 {
@@ -80,6 +81,8 @@ namespace Lette.States
                 .Inject(step);
 
             systems.Init();
+
+            var level = JsonSerializer.Deserialize<LevelDefinition>(File.ReadAllText($"Content/levels/test.json"), JsonSerialization.GetOptions());
 
             var other = world
                 .NewEntity()
