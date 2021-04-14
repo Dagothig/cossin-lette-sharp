@@ -186,7 +186,7 @@ namespace Lette.Systems
 
     public class LevelLoader : IEcsRunSystem
     {
-        EcsWorld? world;
+        EcsWorld? world = null;
 
         public void Run()
         {

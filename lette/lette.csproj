@@ -4,7 +4,6 @@
     <TargetFramework>net5.0</TargetFramework>
     <PublishReadyToRun>false</PublishReadyToRun>
     <TieredCompilation>false</TieredCompilation>
-    <DefineConstants>LEOECS_FILTER_EVENTS</DefineConstants>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup>

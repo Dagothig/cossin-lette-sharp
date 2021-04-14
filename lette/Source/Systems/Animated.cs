@@ -56,14 +56,12 @@ namespace Lette.Systems
                     sprite.Entry = entryIdx;
                     sprite.Strip = stripIdx;
                 }
-                else
+                else if (entry != null && entry.FPS > 0)
                 {
-                    if (entry != null && entry.FPS > 0) {
-                        animator.Time += dt;
-                        int shift = (int)(animator.Time / entry.FrameTime);
-                        animator.Time -= shift * entry.FrameTime;
-                        sprite.Tile = (sprite.Tile + shift) % entry.TilesCount;
-                    }
+                    animator.Time += dt;
+                    int shift = (int)(animator.Time / entry.FrameTime);
+                    animator.Time -= shift * entry.FrameTime;
+                    sprite.Tile = (sprite.Tile + shift) % entry.TilesCount;
                 }
             }
 
@@ -71,10 +69,13 @@ namespace Lette.Systems
             {
                 foreach (var entry in tileset.Entries)
                 {
-                    entry.Time += dt;
-                    int shift = (int)(entry.Time / entry.FrameTime);
-                    entry.Time -= shift * entry.FrameTime;
-                    entry.FrameTile = (entry.FrameTile + shift * entry.Size.Y) % entry.Quads.GetLength(1);
+                    if (entry.FPS > 0)
+                    {
+                        entry.Time += dt;
+                        int shift = (int)(entry.Time / entry.FrameTime);
+                        entry.Time -= shift * entry.FrameTime;
+                        entry.FrameTile = (entry.FrameTile + shift * entry.Size.Y) % entry.Quads.GetLength(1);
+                    }
                 }
             }
         }

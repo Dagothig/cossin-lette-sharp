@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using Lette.Resources;
 using System.IO;
 using System.Text.Json;
+using System.Linq;
 
 namespace Lette.States
 {
@@ -67,6 +68,7 @@ namespace Lette.States
 
             drawSystems = new EcsSystems(world)
                 .Add(new Renderer())
+                .Add(new PhysicsRenderer())
                 .Inject(batch);
 
             systems = new EcsSystems(world)
@@ -83,15 +85,12 @@ namespace Lette.States
             systems.Init();
 
             var level = JsonSerializer.Deserialize<LevelDefinition>(File.ReadAllText($"Content/levels/test.json"), JsonSerialization.GetOptions());
-
-            var other = world
-                .NewEntity()
-                .Replace<Pos>(new Vector2(2, 2))
-                .Replace(new Sprite { Src = "cossin" })
-                .Replace(new Animator())
-                .Replace(new Actor { Speed = 8, Flags = AnimFlag.DirBR })
-                .Replace(new Body { Shape = BodyShape.Circle(0.6f) });
-
+            if (level != null) foreach (var edef in level.Entities)
+            {
+                var entity = world.NewEntity();
+                foreach (var component in edef)
+                    component.Replace(entity);
+            }
             var cossin = world
                 .NewEntity()
                 .Replace<Pos>(new Vector2(3, 3))
@@ -115,25 +114,6 @@ namespace Lette.States
                 })
                 .Replace(new Input() { Value = EnumArray<InputType, float>.New() })
                 .Replace(new Camera());
-
-            var tiles = world
-                .NewEntity()
-                .Replace(new Tiles
-                {
-                    Src = "forest",
-                    Idx = Tiles.GenerateIdx(3, 3, 1,
-                        5, 0, 0, 3, 5, 1, 0, 3, 5, 2, 0, 3,
-                        5, 0, 1, 2, 5, 1, 1, 2, 5, 2, 1, 2,
-                        5, 0, 2, 1, 5, 1, 2, 1, 5, 2, 2, 1)
-                })
-                .Replace(new StaticCollisions
-                {
-                    Chains = new()
-                    {
-                        new Vector2[] { new(0, 2) }
-                    }
-                })
-                .Replace<Pos>(new Vector2(0, 0));
         }
 
         public void Update()

@@ -170,9 +170,9 @@ namespace Lette.Core
                 .Advance(out var h)
                 .Advance(out var d);
             var idx = new Components.Tile[w, h, d];
-            for (var x = 0; x < w; x++)
+            for (var z = 0; z < d; z++)
                 for (var y = 0; y < h; y++)
-                    for (var z = 0; z < d; z++)
+                    for (var x = 0; x < w; x++)
                     {
                         reader
                             .Advance(out var entry)
