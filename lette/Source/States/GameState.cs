@@ -24,13 +24,10 @@ namespace Lette.States
         EcsSystems? systems;
 
         CossinLette? game;
-        SpriteBatch? batch;
         Aether.Dynamics.World? physicsWorld;
         DebugView? physicsDebugView;
-        FileSystemWatcher? watcher;
         GenArr<Sheet>? sheets;
         GenArr<Tileset>? tilesets;
-        TimeSpan step = TimeSpan.FromSeconds(1) / 60;
 
         public bool CapturesUpdate => true;
 
@@ -42,16 +39,9 @@ namespace Lette.States
         public void Init(CossinLette game)
         {
             this.game = game;
-            batch = new(game.GraphicsDevice);
             physicsWorld = new(Vector2.Zero);
             physicsDebugView = new(physicsWorld);
-            physicsDebugView.LoadContent(game.GraphicsDevice);
-            watcher = new()
-            {
-                Path = "Content",
-                IncludeSubdirectories = true,
-                EnableRaisingEvents = true
-            };
+            physicsDebugView.LoadContent(game.GraphicsDevice, game.Fonts);
             sheets = new(new GenIdxAllocator());
             tilesets = new(new GenIdxAllocator());
 
@@ -68,18 +58,19 @@ namespace Lette.States
 
             drawSystems = new EcsSystems(world)
                 .Add(new Renderer())
-                .Inject(batch);
+                .Inject(game.Batch)
+                .Inject(game.Fonts);
 
             systems = new EcsSystems(world)
                 .Add(updateSystems)
                 .Add(drawSystems)
                 .Inject(game)
-                .Inject(watcher)
+                .Inject(game.Watcher)
                 .Inject(sheets)
                 .Inject(tilesets)
+                .Inject(game.Step)
                 .Inject(physicsWorld)
-                .Inject(physicsDebugView)
-                .Inject(step);
+                .Inject(physicsDebugView);
 
             systems.Init();
 
@@ -90,13 +81,14 @@ namespace Lette.States
                 foreach (var component in edef)
                     component.Replace(entity);
             }
+
             var cossin = world
                 .NewEntity()
                 .Replace<Pos>(new Vector2(3, 3))
                 .Replace(new Sprite { Src = "cossin" })
                 .Replace(new Animator())
-                .Replace(new Actor { Speed = 8 })
-                .Replace(new Body { Shape = BodyShape.Circle(0.6f) })
+                .Replace(new Actor { Speed = 10 })
+                .Replace(new Body { Shape = BodyShape.Circle(0.8f) })
                 .Replace(new KeyMap
                 {
                     Value = new()
@@ -128,8 +120,6 @@ namespace Lette.States
         {
             systems?.Destroy();
             world?.Destroy();
-            batch?.Dispose();
-            watcher?.Dispose();
         }
     }
 }

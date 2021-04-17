@@ -1,4 +1,3 @@
-using System.Linq;
 using Lette.Components;
 using Leopotam.Ecs;
 using Microsoft.Xna.Framework.Input;

@@ -21,6 +21,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using tainicom.Aether.Physics2D;
+using FontStashSharp;
 
 namespace Lette.Lib.Physics
 {
@@ -495,7 +496,7 @@ namespace Lette.Lib.Physics
         //Drawing
         private IPrimitiveBatch _primitiveBatch;
         private SpriteBatch _batch;
-        //private SpriteFont _font;
+        private SpriteFontBase _font;
         private GraphicsDevice _device;
         private Vector2[] _tempVertices = new Vector2[Settings.MaxPolygonVertices];
         private List<StringData> _stringData;
@@ -1280,14 +1281,13 @@ namespace Lette.Lib.Physics
             _batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
 
             // draw any strings we have
-            // TODO - FOOOOONTS
-            /*for (int i = 0; i < _stringData.Count; i++)
+            for (int i = 0; i < _stringData.Count; i++)
             {
                 if (_stringData[i].Text != null)
                     _batch.DrawString(_font, _stringData[i].Text, _stringData[i].Position, _stringData[i].Color);
                 else
                     _batch.DrawString(_font, _stringData[i].stringBuilderText, _stringData[i].Position, _stringData[i].Color);
-            }*/
+            }
 
             // end the sprite batch effect
             _batch.End();
@@ -1306,14 +1306,13 @@ namespace Lette.Lib.Physics
             RenderDebugData(ref projection, ref view, ref world, blendState, samplerState, depthStencilState, rasterizerState, alpha);
         }
 
-        public void LoadContent(GraphicsDevice device, IPrimitiveBatch primitiveBatch = null)
+        public void LoadContent(GraphicsDevice device, FontSystem fonts, IPrimitiveBatch primitiveBatch = null)
         {
             _device = device;
             // Create a new SpriteBatch, which can be used to draw textures.
             _batch = new SpriteBatch(_device);
             _primitiveBatch = (primitiveBatch != null) ? primitiveBatch : new PrimitiveBatch(_device, 1000);
-            // TODO FOOOOOOONTS
-            //_font = content.Load<SpriteFont>("DiagnosticsFont");
+            _font = fonts.GetFont(12);
             _stringData = new List<StringData>();
 
             _localProjection = Matrix.CreateOrthographicOffCenter(0f, _device.Viewport.Width, _device.Viewport.Height, 0f, 0f, 1f);

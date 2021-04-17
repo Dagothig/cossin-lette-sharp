@@ -6,8 +6,8 @@ using Lette.Resources;
 using Lette.Lib.Physics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Aether = tainicom.Aether.Physics2D;
 using static System.MathF;
+using FontStashSharp;
 
 namespace Lette.Systems
 {
@@ -20,8 +20,8 @@ namespace Lette.Systems
         EcsFilter<Camera, Pos>? cameras = null;
         GenArr<Tileset>? tilesets= null;
         GenArr<Sheet>? sheets = null;
-        Aether.Dynamics.World? world = null;
         DebugView? debugView = null;
+        FontSystem? fonts = null;
 
         public void RenderSprites(AABB region, float zend, float zextent)
         {
@@ -72,8 +72,7 @@ namespace Lette.Systems
                 var tileSize = tileset.Size.ToVector2();
 
                 var tpos = tileses.Get2(j).Value * Constants.PIXELS_PER_METER;
-                // TODO This should only be tileSize / 2????
-                var tregion = ((region - tpos + tileSize) / tileSize).Round();
+                var tregion = ((region - tpos) / tileSize).Round();
 
                 var w = Math.Min(tiles.Idx.GetLength(0), tregion.X + tregion.Width);
                 var h = Math.Min(tiles.Idx.GetLength(1), tregion.Y + tregion.Height);
@@ -93,7 +92,7 @@ namespace Lette.Systems
                             var layer = 1f;
 
                             if (tile.Height > 0)
-                                layer = (zend - ((tile.Height - 1) * tileSize.Y + posY)) / zextent;
+                                layer = (zend - ((tile.Height) * tileSize.Y + posY)) / zextent;
 
                             batch.Draw(
                                 entry.Texture,
@@ -101,7 +100,7 @@ namespace Lette.Systems
                                 quad,
                                 Color.White,
                                 0,
-                                tileSize,
+                                Vector2.Zero,
                                 Vector2.One,
                                 SpriteEffects.None,
                                 layer);
