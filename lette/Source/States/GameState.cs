@@ -7,11 +7,10 @@ using Leopotam.Ecs;
 using Aether = tainicom.Aether.Physics2D;
 using Lette.Components;
 using Microsoft.Xna.Framework.Input;
-using System.Collections.Generic;
 using Lette.Resources;
 using System.IO;
 using System.Text.Json;
-using System.Linq;
+using Lette.Lib.Physics;
 
 namespace Lette.States
 {
@@ -26,8 +25,8 @@ namespace Lette.States
 
         CossinLette? game;
         SpriteBatch? batch;
-        SpatialMap<EcsEntity>? spatialMap;
         Aether.Dynamics.World? physicsWorld;
+        DebugView? physicsDebugView;
         FileSystemWatcher? watcher;
         GenArr<Sheet>? sheets;
         GenArr<Tileset>? tilesets;
@@ -43,19 +42,20 @@ namespace Lette.States
         public void Init(CossinLette game)
         {
             this.game = game;
-            batch = new SpriteBatch(game.GraphicsDevice);
-            spatialMap = new SpatialMap<EcsEntity>(128);
-            physicsWorld = new Aether.Dynamics.World(Vector2.Zero);
+            batch = new(game.GraphicsDevice);
+            physicsWorld = new(Vector2.Zero);
+            physicsDebugView = new(physicsWorld);
+            physicsDebugView.LoadContent(game.GraphicsDevice);
             watcher = new()
             {
                 Path = "Content",
                 IncludeSubdirectories = true,
                 EnableRaisingEvents = true
             };
-            sheets = new GenArr<Sheet>(new GenIdxAllocator());
-            tilesets = new GenArr<Tileset>(new GenIdxAllocator());
+            sheets = new(new GenIdxAllocator());
+            tilesets = new(new GenIdxAllocator());
 
-            world = new EcsWorld();
+            world = new();
 
             updateSystems = new EcsSystems(world)
                 .Add(new SheetLoader())
@@ -68,7 +68,6 @@ namespace Lette.States
 
             drawSystems = new EcsSystems(world)
                 .Add(new Renderer())
-                .Add(new PhysicsRenderer())
                 .Inject(batch);
 
             systems = new EcsSystems(world)
@@ -79,7 +78,7 @@ namespace Lette.States
                 .Inject(sheets)
                 .Inject(tilesets)
                 .Inject(physicsWorld)
-                .Inject(spatialMap)
+                .Inject(physicsDebugView)
                 .Inject(step);
 
             systems.Init();
@@ -100,7 +99,7 @@ namespace Lette.States
                 .Replace(new Body { Shape = BodyShape.Circle(0.6f) })
                 .Replace(new KeyMap
                 {
-                    Value = new Dictionary<Keys, (InputType, float)>
+                    Value = new()
                     {
                         { Keys.Left, (InputType.X, -1) },
                         { Keys.A, (InputType.X, -1) },

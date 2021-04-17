@@ -3,8 +3,10 @@ using Leopotam.Ecs;
 using Lette.Components;
 using Lette.Core;
 using Lette.Resources;
+using Lette.Lib.Physics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Aether = tainicom.Aether.Physics2D;
 using static System.MathF;
 
 namespace Lette.Systems
@@ -13,19 +15,24 @@ namespace Lette.Systems
     {
         SpriteBatch? batch = null;
         CossinLette? game = null;
-        SpatialMap<EcsEntity>? spatialMap = null;
-        EcsFilter<Tiles, Pos>? positionedTiles = null;
+        EcsFilter<Pos, Sprite, AABB>? sprites = null;
+        EcsFilter<Tiles, Pos>? tileses = null;
         EcsFilter<Camera, Pos>? cameras = null;
         GenArr<Tileset>? tilesets= null;
         GenArr<Sheet>? sheets = null;
+        Aether.Dynamics.World? world = null;
+        DebugView? debugView = null;
 
         public void RenderSprites(AABB region, float zend, float zextent)
         {
-            if (spatialMap != null && batch != null) foreach (var entity in spatialMap.Region(region))
+            if (sprites != null && batch != null) foreach (var i in sprites)
             {
-                // TODO 'A fonciton juste parce que ya que les sprites qui ont des AABBs
-                var entityPos = entity.Get<Pos>().Value * Constants.PIXELS_PER_METER;
-                ref var sprite = ref entity.Get<Sprite>();
+                ref var aabb = ref sprites.Get3(i);
+                if (!region.Overlaps(aabb))
+                    continue;
+
+                var pos = sprites.Get1(i).Value * Constants.PIXELS_PER_METER;
+                ref var sprite = ref sprites.Get2(i);
 
                 // TODO AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaa
 
@@ -42,29 +49,29 @@ namespace Lette.Systems
 
                 batch.Draw(
                     entry.Texture,
-                    entityPos,
+                    pos,
                     tile.Quad,
                     Color.White,
                     0,
                     entry.Decal,
                     tile.Scale,
                     SpriteEffects.None,
-                    (zend - entityPos.Y) / zextent);
+                    (zend - pos.Y) / zextent);
             }
         }
 
         public void RenderTilesets(AABB region, float zend, float zextent)
         {
-            if (positionedTiles != null && batch != null) foreach (var j in positionedTiles)
+            if (tileses != null && batch != null) foreach (var j in tileses)
             {
-                ref var tiles = ref positionedTiles.Get1(j);
+                ref var tiles = ref tileses.Get1(j);
                 var tileset = tilesets?[tiles.TilesetIdx];
                 if (tileset == null || tileset.Entries == null)
                     continue;
 
                 var tileSize = tileset.Size.ToVector2();
 
-                var tpos = positionedTiles.Get2(j).Value * Constants.PIXELS_PER_METER;
+                var tpos = tileses.Get2(j).Value * Constants.PIXELS_PER_METER;
                 // TODO This should only be tileSize / 2????
                 var tregion = ((region - tpos + tileSize) / tileSize).Round();
 
@@ -130,6 +137,7 @@ namespace Lette.Systems
 
                 var pos = (cameras.Get2(i).Value * Constants.PIXELS_PER_METER);
                 var region = new AABB { Min = pos - halfCamSize, Max = pos + halfCamSize };
+                var transform = Matrix.CreateTranslation(new Vector3(-region.Min, 0));
 
                 batch.Begin(
                     SpriteSortMode.BackToFront,
@@ -138,7 +146,7 @@ namespace Lette.Systems
                     DepthStencilState.Default,
                     RasterizerState.CullNone,
                     null,
-                    Matrix.CreateTranslation(new Vector3(-region.Min, 0)));
+                    transform);
 
                 var zend = region.Max.Y + camSize.Y;
                 var zextent = camSize.Y * 3;
@@ -147,6 +155,13 @@ namespace Lette.Systems
                 RenderTilesets(region, zend, zextent);
 
                 batch.End();
+
+                debugView?.RenderDebugData(
+                    Matrix.CreateOrthographicOffCenter(
+                        0, game.GraphicsDevice.Viewport.Width,
+                        game.GraphicsDevice.Viewport.Height, 0,
+                        0, 1),
+                    Matrix.CreateScale(Constants.PIXELS_PER_METER) * transform);
             }
 
             game.GraphicsDevice.Viewport = viewport;
