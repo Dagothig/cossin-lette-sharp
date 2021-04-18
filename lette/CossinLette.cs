@@ -9,6 +9,7 @@ using Lette.Resources;
 using System;
 using FontStashSharp;
 using System.Text.Json;
+using Lette.Core.JsonSerialization;
 
 namespace Lette
 {
@@ -49,7 +50,7 @@ namespace Lette
             Fonts = FontSystemFactory.CreateStroked(GraphicsDevice, 1);
             Fonts.AddFont(File.ReadAllBytes("Content/fonts/Montserrat-Medium.ttf"));
 
-            Init = JsonSerializer.Deserialize<Init>(File.ReadAllText($"Content/init.json"), JsonSerialization.GetOptions());
+            Init = JsonSerializer.Deserialize<Init>(File.ReadAllText($"Content/init.json"), JsonSerialization.Options);
 
             base.LoadContent();
         }

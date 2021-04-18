@@ -22,7 +22,8 @@ namespace Lette.Systems
         GenArr<Sheet>? sheets = null;
         DebugView? debugView = null;
         FontSystem? fonts = null;
-        DateTime prevTime;
+        // TODO LOL
+        DateTime prevTime = DateTime.Now;
         double prevFPS = 60;
 
         public void RenderSprites(AABB region, float zend, float zextent)

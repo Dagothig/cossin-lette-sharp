@@ -12,6 +12,7 @@ using Tile = Lette.Resources.Tile;
 using Lette.Core;
 using System;
 using System.Threading;
+using Lette.Core.JsonSerialization;
 
 namespace Lette.Systems
 {
@@ -31,7 +32,7 @@ namespace Lette.Systems
     public abstract class Loader<H, R> : IEcsInitSystem, IEcsRunSystem, IEcsDestroySystem
     where H: struct, IHandle
     {
-        protected JsonSerializerOptions options = JsonSerialization.GetOptions();
+        protected JsonSerializerOptions options = JsonSerialization.Options;
         protected FileSystemWatcher? watcher = null;
 
         protected Game? game = null;
