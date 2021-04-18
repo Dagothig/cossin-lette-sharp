@@ -256,6 +256,7 @@ namespace Lette.Core
             options.Converters.Add(new ValueConverter<Pos, Vector2>());
             options.Converters.Add(new ValueConverter<KeyMap, Dictionary<Keys, (InputType, float)>>());
             options.Converters.Add(new ValueConverter<Input, EnumArray<InputType, float>>());
+            options.Converters.Add(new ValueConverter<Id, string>());
             options.Converters.Add(new Vec2ArrConverter());
             options.Converters.Add(new TilesConverter());
 

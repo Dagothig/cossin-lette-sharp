@@ -28,6 +28,7 @@ namespace Lette.States
         DebugView? physicsDebugView;
         GenArr<Sheet>? sheets;
         GenArr<Tileset>? tilesets;
+        GenArr<LevelDefinition>? levels;
 
         public bool CapturesUpdate => true;
 
@@ -44,12 +45,14 @@ namespace Lette.States
             physicsDebugView.LoadContent(game.GraphicsDevice, game.Fonts);
             sheets = new(new GenIdxAllocator());
             tilesets = new(new GenIdxAllocator());
+            levels = new(new GenIdxAllocator());
 
             world = new();
 
             updateSystems = new EcsSystems(world)
                 .Add(new SheetLoader())
                 .Add(new TilesetLoader())
+                .Add(new LevelLoader())
                 .Add(new Inputs())
                 .Add(new Actors())
                 .Add(new Physics())
@@ -68,19 +71,16 @@ namespace Lette.States
                 .Inject(game.Watcher)
                 .Inject(sheets)
                 .Inject(tilesets)
+                .Inject(levels)
                 .Inject(game.Step)
                 .Inject(physicsWorld)
                 .Inject(physicsDebugView);
 
             systems.Init();
 
-            var level = JsonSerializer.Deserialize<LevelDefinition>(File.ReadAllText($"Content/levels/test.json"), JsonSerialization.GetOptions());
-            if (level != null) foreach (var edef in level.Entities)
-            {
-                var entity = world.NewEntity();
-                foreach (var component in edef)
-                    component.Replace(entity);
-            }
+            var level = world
+                .NewEntity()
+                .Replace(new Level { Src = "test" });
 
             var cossin = world
                 .NewEntity()

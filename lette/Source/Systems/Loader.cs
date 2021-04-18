@@ -40,6 +40,7 @@ namespace Lette.Systems
         protected GenArr<R>? resources = null;
         protected Dictionary<string, LoadEntry<R>> entries = new();
 
+        public abstract string Folder { get; }
         public abstract Task<R> Load(string src, CancellationToken token);
 
         public void Load(LoadEntry<R> entry, bool debounce = false)
@@ -84,12 +85,13 @@ namespace Lette.Systems
 
         public void OnChanged(object sender, FileSystemEventArgs e)
         {
-            (e.Name ?? "").Split("/").Take(out var type, out var resource);
-            if (type == "img" && entries.TryGetValue(resource, out var entry) && resources != null)
+            (e.Name ?? "").Split("/").Take(out var type, out var raw_resource);
+            raw_resource.Split(".").Take(out var resource);
+            if (type == Folder && entries.TryGetValue(resource, out var entry) && resources != null)
                 Load(entry, true);
         }
 
-        public void Run()
+        public virtual void Run()
         {
             if (handles != null && entries != null && resources != null) foreach (var i in handles)
             {
@@ -97,9 +99,7 @@ namespace Lette.Systems
                 if (!handle.Idx.IsNull)
                     continue;
                 if (entries.TryGetValue(handle.Src, out var foundEntry))
-                {
                     handle.Idx = foundEntry.Idx;
-                }
                 else
                 {
                     var entry = new LoadEntry<R>(handle.Src, resources.Allocator.Alloc());
@@ -113,6 +113,8 @@ namespace Lette.Systems
 
     public class SheetLoader : Loader<Sprite, Sheet>
     {
+        public override string Folder => "img";
+
         public override async Task<Sheet> Load(string src, CancellationToken token)
         {
             if (game == null)
@@ -153,6 +155,8 @@ namespace Lette.Systems
 
     public class TilesetLoader : Loader<Tiles, Tileset>
     {
+        public override string Folder => "img";
+
         public override async Task<Tileset> Load(string src, CancellationToken token)
         {
             if (game == null)
@@ -184,19 +188,68 @@ namespace Lette.Systems
         }
     }
 
-    public class LevelLoader : IEcsRunSystem
+    public class LevelLoader : Loader<Level, LevelDefinition>
     {
+        public override string Folder => "levels";
+
+        EcsFilter<Owner>? owned = null;
         EcsWorld? world = null;
 
-        public void Run()
+        public override async Task<LevelDefinition> Load(string src, CancellationToken token)
         {
-            LevelDefinition ldef = new();
-
-            if (world != null) foreach (var edef in ldef.Entities)
+            if (game == null)
+                throw new NullReferenceException();
+            using (var file = File.OpenRead($"Content/levels/{ src }.json"))
             {
-                var entity = world.NewEntity();
-                foreach (var component in edef)
-                    component.Replace(entity);
+                var def = await JsonSerializer.DeserializeAsync<LevelDefinition>(file, options, token);
+                if (def == null)
+                    throw new Exception();
+                def.Src = src;
+                return def;
+            }
+        }
+
+        public override void Run()
+        {
+            base.Run();
+
+            if (handles == null || owned == null || world == null)
+                return;
+
+            foreach (var i in handles)
+            {
+                ref var level = ref handles.Get1(i);
+                var def = resources?[level.Idx];
+                if (def == null)
+                    continue;
+
+                var hash = def.GetHashCode();
+                if (level.DefHash == hash)
+                    continue;
+
+                ref var levelEntity = ref handles.GetEntity(i);
+                level.DefHash = hash;
+
+                foreach (var j in owned)
+                {
+                    ref var owner = ref owned.Get1(j);
+                    // TODO Keep a map of the owned entities for a level
+                    if (owner.Value != levelEntity)
+                        continue;
+
+                    ref var entity = ref owned.GetEntity(j);
+                    entity.Destroy();
+                }
+
+                foreach (var (id, edef) in def.Entities)
+                {
+                    var entity = world
+                        .NewEntity()
+                        .Replace<Owner>(levelEntity)
+                        .Replace<Id>(id);
+                    foreach (var component in edef)
+                        component.Replace(entity);
+                }
             }
         }
     }

@@ -1,6 +1,6 @@
 {
-    "entities": [
-        {
+    "entities": {
+        "tiles": {
             "pos": [0, 0],
             "staticCollisions": {
                 "chains": [
@@ -27,12 +27,12 @@
                 ]
             }
         },
-        {
-            "pos": [6, 3],
+        "other": {
+            "pos": [4, 5],
             "sprite": { "src": "cossin" },
             "animator": {},
-            "actor": { "speed": 10, "flags": ["DirBR"] },
+            "actor": { "speed": 10, "flags": ["DirTL"] },
             "body": { "shape": { "type": 0, "radius": 0.8 } }
         }
-    ]
+    }
 }

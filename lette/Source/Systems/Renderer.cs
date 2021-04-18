@@ -22,6 +22,8 @@ namespace Lette.Systems
         GenArr<Sheet>? sheets = null;
         DebugView? debugView = null;
         FontSystem? fonts = null;
+        DateTime prevTime;
+        double prevFPS = 60;
 
         public void RenderSprites(AABB region, float zend, float zextent)
         {
@@ -161,6 +163,12 @@ namespace Lette.Systems
                         game.GraphicsDevice.Viewport.Height, 0,
                         0, 1),
                     Matrix.CreateScale(Constants.PIXELS_PER_METER) * transform);
+
+                var now = DateTime.Now;
+                var fps = prevFPS * 0.9 + 1000.0 / (now - prevTime).TotalMilliseconds * 0.1;
+                debugView?.DrawString(12, 12, Math.Round(fps, 2).ToString());
+                prevTime = now;
+                prevFPS = fps;
             }
 
             game.GraphicsDevice.Viewport = viewport;

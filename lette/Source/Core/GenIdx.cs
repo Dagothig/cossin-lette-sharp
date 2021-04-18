@@ -25,7 +25,7 @@ namespace Lette.Core
         public int NextGeneration = 1;
         public int Count = 0;
 
-        public GenIdxAllocator(int size = 10)
+        public GenIdxAllocator(int size = 256)
         {
             Entries = new AllocatorEntry[size];
         }

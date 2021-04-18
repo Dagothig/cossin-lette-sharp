@@ -34,7 +34,7 @@ namespace Lette.Components
         T Value { get; set; }
     }
 
-    public struct Sprite : IHandle, IReplaceOnEntity<Sprite>
+    public struct Sprite : IHandle, IReplaceOnEntity<Sprite>, IEcsAutoReset<Sprite>
     {
         public string Src { get; set; }
         public int Entry;
@@ -44,6 +44,11 @@ namespace Lette.Components
         [JsonIgnore]
         public GenIdx SheetIdx;
         public GenIdx Idx { get => SheetIdx; set => SheetIdx = value; }
+
+        public void AutoReset(ref Sprite c)
+        {
+            c.SheetIdx = default;
+        }
     }
 
     public struct Tile : IReplaceOnEntity<Tile>
@@ -53,7 +58,7 @@ namespace Lette.Components
         public int Height;
     }
 
-    public struct Tiles : IHandle, IReplaceOnEntity<Tiles>
+    public struct Tiles : IHandle, IReplaceOnEntity<Tiles>, IEcsAutoReset<Tiles>
     {
         public static Tile[,,] GenerateIdx(int w, int h, int d, params int[] exys)
         {
@@ -79,6 +84,11 @@ namespace Lette.Components
         [JsonIgnore]
         public GenIdx TilesetIdx;
         GenIdx IHandle.Idx { get => TilesetIdx; set => TilesetIdx = value; }
+
+        public void AutoReset(ref Tiles c)
+        {
+            c.TilesetIdx = default;
+        }
     }
 
     public struct Animator : IReplaceOnEntity<Animator>
@@ -119,7 +129,7 @@ namespace Lette.Components
 
         public void AutoReset(ref Body c)
         {
-            c.Physics?.World.Remove(Physics);
+            c.Physics?.World.Remove(c.Physics);
             c.Physics = null;
         }
     }
@@ -133,7 +143,7 @@ namespace Lette.Components
 
         public void AutoReset(ref Body c)
         {
-            c.Physics?.World.Remove(Physics);
+            c.Physics?.World.Remove(c.Physics);
             c.Physics = null;
         }
     }
@@ -144,7 +154,7 @@ namespace Lette.Components
         public Flags<AnimFlag> Flags;
     }
 
-    public struct KeyMap : IReplaceOnEntity<KeyMap>, IValue<Dictionary<Keys, (InputType, float)>>
+    public struct KeyMap : IReplaceOnEntity<KeyMap>, IValue<Dictionary<Keys, (InputType, float)>>, IEcsAutoReset<KeyMap>
     {
         public Dictionary<Keys, (InputType, float)> Value;
 
@@ -153,9 +163,14 @@ namespace Lette.Components
             get => Value;
             set => Value = value;
         }
+
+        public void AutoReset(ref KeyMap c)
+        {
+            c.Value?.Clear();
+        }
     }
 
-    public struct Input : IReplaceOnEntity<Input>, IValue<EnumArray<InputType, float>>
+    public struct Input : IReplaceOnEntity<Input>, IValue<EnumArray<InputType, float>>, IEcsAutoReset<Input>
     {
         public EnumArray<InputType, float> Value;
 
@@ -164,12 +179,42 @@ namespace Lette.Components
             get => Value;
             set => Value = value;
         }
+
+        public void AutoReset(ref Input c)
+        {
+            c.Value.Clear();
+        }
     }
 
     public struct Camera : IReplaceOnEntity<Camera>
     { }
 
-    public struct Level : IReplaceOnEntity<Level>
+    public struct Level : IHandle, IReplaceOnEntity<Level>, IEcsAutoReset<Level>
     {
+        public string Src { get; set; }
+        public GenIdx Idx { get; set; }
+        public int? DefHash { get; set; }
+
+        public void AutoReset(ref Level c)
+        {
+            c.Idx = default;
+            c.DefHash = null;
+        }
+    }
+
+    public struct Id : IValue<string>
+    {
+        public string Value { get; set; }
+
+        public static implicit operator string(Id str) => str.Value;
+        public static implicit operator Id(string str) => new Id { Value = str };
+    }
+
+    public struct Owner : IValue<EcsEntity>
+    {
+        public EcsEntity Value { get; set; }
+
+        public static implicit operator EcsEntity(Owner owner) => owner.Value;
+        public static implicit operator Owner(EcsEntity owner) => new Owner { Value = owner };
     }
 }

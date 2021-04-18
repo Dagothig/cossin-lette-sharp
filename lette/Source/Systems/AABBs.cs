@@ -23,7 +23,8 @@ namespace Lette.Systems
                     continue;
                 var min = pos.Value * Constants.PIXELS_PER_METER - sheetEntry.Decal;
                 var max = min + sheetEntry.Size;
-                spriteBoxes.GetEntity(i).Replace(new AABB() { Min = min, Max = max });
+                ref var entity = ref spriteBoxes.GetEntity(i);
+                entity.Replace(new AABB() { Min = min, Max = max });
             }
         }
     }

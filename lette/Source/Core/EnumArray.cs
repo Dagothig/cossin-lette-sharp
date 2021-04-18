@@ -4,7 +4,9 @@ using System.Collections.Generic;
 using System.Collections;
 using Lette.Core;
 
-public struct EnumArray<K, V>: IEnumerable<(K, V)> where K : struct, IConvertible
+public struct EnumArray<K, V>: IEnumerable<(K, V)>
+where K : struct, IConvertible
+where V : new()
 {
     V[] Values;
 
@@ -19,6 +21,12 @@ public struct EnumArray<K, V>: IEnumerable<(K, V)> where K : struct, IConvertibl
         foreach (var (k, v) in entries)
             arr[k] = v;
         return arr;
+    }
+
+    public void Clear()
+    {
+        if (Values != null) for (var i = 0; i < Values.Length; i++)
+            Values[i] = new();
     }
 
     public IEnumerable<K> Keys =>
