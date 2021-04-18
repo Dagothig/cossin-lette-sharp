@@ -1312,7 +1312,7 @@ namespace Lette.Lib.Physics
             // Create a new SpriteBatch, which can be used to draw textures.
             _batch = new SpriteBatch(_device);
             _primitiveBatch = (primitiveBatch != null) ? primitiveBatch : new PrimitiveBatch(_device, 1000);
-            _font = fonts.GetFont(12);
+            _font = fonts.GetFont(14);
             _stringData = new List<StringData>();
 
             _localProjection = Matrix.CreateOrthographicOffCenter(0f, _device.Viewport.Width, _device.Viewport.Height, 0f, 0f, 1f);

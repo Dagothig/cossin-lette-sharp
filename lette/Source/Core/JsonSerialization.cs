@@ -108,11 +108,11 @@ namespace Lette.Core
             var flags = Flags<T>.New();
             while (reader.Read() && reader.TokenType == JsonTokenType.String)
             {
-                var name = reader.GetString();
-                if (name is string && Enum<T>.Map.TryGetValue(name, out var value))
-                    flags[value] = true;
-                else
+                var value = (T?)JsonSerializer.Deserialize(ref reader, typeof(T), options);
+                if (!value.HasValue)
                     throw new Exception();
+                else
+                    flags[value.Value] = true;
             }
             if (reader.TokenType != JsonTokenType.EndArray)
                 throw new Exception();
@@ -127,6 +127,17 @@ namespace Lette.Core
             writer.WriteEndArray();
 
         }
+    }
+
+    public class FlagsConverterFactory : JsonConverterFactory
+    {
+        public override bool CanConvert(Type typeToConvert) =>
+            typeToConvert.IsGenericType &&
+            typeToConvert.GetGenericTypeDefinition() == typeof(Flags<>);
+
+        public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options) =>
+            (JsonConverter?)Activator.CreateInstance(
+                typeof(FlagsConverter<>).MakeGenericType(typeToConvert.GetGenericArguments()));
     }
 
     public class ValueConverter<T, V> : JsonConverter<T> where T : IValue<V>, new()
@@ -149,8 +160,8 @@ namespace Lette.Core
     {
         public override Vector2[]? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
             JsonSerializer
-            .Deserialize<float[]>(ref reader, options)?
-            .Select2((x, y) =>  new Vector2(x, y))
+            .Deserialize<float[]>(ref reader, options)
+            ?.Select2((x, y) =>  new Vector2(x, y))
             .ToArray();
 
         public override void Write(Utf8JsonWriter writer, Vector2[] value, JsonSerializerOptions options)
@@ -199,7 +210,30 @@ namespace Lette.Core
         }
     }
 
-    public class EntityConverter : JsonConverter<EntityDefinition>
+    public abstract class MapConverter<T> : JsonConverter<T>
+    {
+        public abstract T Init();
+        public abstract void ReadValue(ref Utf8JsonReader reader, ref T obj, string name, JsonSerializerOptions options);
+
+        public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            if (reader.TokenType != JsonTokenType.StartObject)
+                throw new Exception();
+            var obj = Init();
+            while (reader.Read() && reader.TokenType == JsonTokenType.PropertyName)
+            {
+                var name = reader.GetString();
+                if (!(name is string))
+                    throw new Exception();
+                ReadValue(ref reader, ref obj, name, options);
+            }
+            if (reader.TokenType != JsonTokenType.EndObject)
+                throw new Exception();
+            return obj;
+        }
+    }
+
+    public class EntityConverter : MapConverter<EntityDefinition>
     {
         static readonly Dictionary<string, Type> ComponentTypes = Assembly
             .GetExecutingAssembly()
@@ -207,32 +241,161 @@ namespace Lette.Core
             .Where(t => t.IsAssignableTo(typeof(IReplaceOnEntity)))
             .ToDictionary(value => value.Name.ToCamel());
 
-        public override EntityDefinition? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        {
-            if (reader.TokenType != JsonTokenType.StartObject)
-                throw new Exception();
-            var def = new EntityDefinition();
-            while (reader.Read() && reader.TokenType == JsonTokenType.PropertyName)
-            {
-                var name = reader.GetString();
-                if (!(name is string))
-                    throw new Exception();
-                var type = ComponentTypes[name];
-                var value = JsonSerializer.Deserialize(ref reader, type, options) as IReplaceOnEntity;
-                if (value == null)
-                    throw new Exception();
-                def.Add(value);
-            }
-            if (reader.TokenType != JsonTokenType.EndObject)
-                throw new Exception();
-            return def;
+        public override EntityDefinition Init() => new EntityDefinition();
 
+        public override void ReadValue(
+            ref Utf8JsonReader reader,
+            ref EntityDefinition def,
+            string name,
+            JsonSerializerOptions options)
+        {
+            var type = ComponentTypes[name];
+            var value = JsonSerializer.Deserialize(ref reader, type, options) as IReplaceOnEntity;
+            if (value == null)
+                throw new Exception();
+            def.Add(value);
         }
 
         public override void Write(Utf8JsonWriter writer, EntityDefinition value, JsonSerializerOptions options)
         {
             throw new NotImplementedException();
         }
+    }
+
+    public class EnumConverter<T> : JsonConverter<T> where T : struct, IConvertible
+    {
+        public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            if (reader.TokenType != JsonTokenType.String)
+                throw new Exception();
+            var str = reader.GetString()?.ToPascal() ?? string.Empty;
+            if (!Enum<T>.Map.TryGetValue(str, out var r))
+                throw new Exception($"Unknown value { str } for enum { typeof(T).ToString() }");
+            return r;
+        }
+
+        public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class EnumConverterFactory : JsonConverterFactory
+    {
+        public override bool CanConvert(Type typeToConvert) => typeToConvert.IsEnum;
+
+        public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options) =>
+            (JsonConverter?)Activator.CreateInstance(
+                typeof(EnumConverter<>).MakeGenericType(typeToConvert));
+    }
+
+    public class EnumArrayConverter<K, V> : MapConverter<EnumArray<K, V>>
+    where K : struct, IConvertible
+    where V : new()
+    {
+        public override EnumArray<K, V> Init() => EnumArray<K, V>.New();
+
+        public override void ReadValue(
+            ref Utf8JsonReader reader,
+            ref EnumArray<K, V> arr,
+            string name,
+            JsonSerializerOptions options)
+        {
+            if (!Enum<K>.Map.TryGetValue(name.ToPascal(), out var key))
+                throw new Exception($"Unknown value { name } for enum { typeof(K).ToString() }");
+            var value = JsonSerializer.Deserialize<V>(ref reader, options);
+            if (value == null)
+                throw new Exception();
+            arr[key] = value;
+        }
+
+        public override void Write(Utf8JsonWriter writer, EnumArray<K, V> value, JsonSerializerOptions options)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class EnumArrayConverterFactory : JsonConverterFactory
+    {
+        public override bool CanConvert(Type typeToConvert) =>
+            typeToConvert.IsGenericType &&
+            typeToConvert.GetGenericTypeDefinition() == typeof(EnumArray<,>);
+
+        public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options) =>
+            (JsonConverter?)Activator.CreateInstance(
+                typeof(EnumArrayConverter<,>).MakeGenericType(typeToConvert.GetGenericArguments()));
+    }
+
+    public class EnumDictionaryConverter<K, V> : MapConverter<Dictionary<K, V>>
+    where K : struct, IConvertible
+    where V : new()
+    {
+        public override Dictionary<K, V> Init() => new();
+
+        public override void ReadValue(
+            ref Utf8JsonReader reader,
+            ref Dictionary<K, V> arr,
+            string name,
+            JsonSerializerOptions options)
+        {
+            if (!Enum<K>.Map.TryGetValue(name.ToPascal(), out var key))
+                throw new Exception($"Unknown value { name } for enum { typeof(K).ToString() }");
+            var value = JsonSerializer.Deserialize<V>(ref reader, options);
+            if (value == null)
+                throw new Exception();
+            arr[key] = value;
+        }
+
+        public override void Write(Utf8JsonWriter writer, Dictionary<K, V> value, JsonSerializerOptions options)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class EnumDictionaryConverterFactory : JsonConverterFactory
+    {
+        public override bool CanConvert(Type typeToConvert) =>
+            typeToConvert.IsGenericType &&
+            typeToConvert.GetGenericTypeDefinition() == typeof(Dictionary<,>) &&
+            typeToConvert.GetGenericArguments()[0].IsEnum;
+
+        public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options) =>
+            (JsonConverter?)Activator.CreateInstance(
+                typeof(EnumDictionaryConverter<,>).MakeGenericType(typeToConvert.GetGenericArguments()));
+    }
+
+    public class TupleConverter<A, B> : JsonConverter<(A, B)> where A : notnull where B : notnull
+    {
+        public override (A, B) Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            if (reader.TokenType != JsonTokenType.StartArray)
+                throw new Exception();
+            if (!reader.Read() || reader.TokenType == JsonTokenType.EndArray)
+                throw new Exception();
+            var a = JsonSerializer.Deserialize<A>(ref reader, options);
+            if (!reader.Read() || reader.TokenType == JsonTokenType.EndArray)
+                throw new Exception();
+            var b = JsonSerializer.Deserialize<B>(ref reader, options);
+            if (a == null || b == null || !reader.Read() || reader.TokenType != JsonTokenType.EndArray)
+                throw new Exception();
+            return (a, b);
+        }
+
+        public override void Write(Utf8JsonWriter writer, (A, B) value, JsonSerializerOptions options)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class TupleConverterFactory : JsonConverterFactory
+    {
+        public override bool CanConvert(Type typeToConvert) =>
+            typeToConvert.IsGenericType &&
+            typeToConvert.GetGenericTypeDefinition() == typeof(ValueTuple<,>);
+
+        public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options) =>
+            (JsonConverter?)Activator.CreateInstance(
+                typeof(TupleConverter<,>).MakeGenericType(typeToConvert.GetGenericArguments()));
     }
 
     public static class JsonSerialization
@@ -251,7 +414,6 @@ namespace Lette.Core
             options.Converters.Add(new PointConverter());
             options.Converters.Add(new Vector2Converter());
             options.Converters.Add(new RectangleConverter());
-            options.Converters.Add(new FlagsConverter<AnimFlag>());
             options.Converters.Add(new EntityConverter());
             options.Converters.Add(new ValueConverter<Pos, Vector2>());
             options.Converters.Add(new ValueConverter<KeyMap, Dictionary<Keys, (InputType, float)>>());
@@ -259,6 +421,11 @@ namespace Lette.Core
             options.Converters.Add(new ValueConverter<Id, string>());
             options.Converters.Add(new Vec2ArrConverter());
             options.Converters.Add(new TilesConverter());
+            options.Converters.Add(new EnumConverterFactory());
+            options.Converters.Add(new FlagsConverterFactory());
+            options.Converters.Add(new EnumArrayConverterFactory());
+            options.Converters.Add(new EnumDictionaryConverterFactory());
+            options.Converters.Add(new TupleConverterFactory());
 
             return options;
         }

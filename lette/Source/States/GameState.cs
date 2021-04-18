@@ -1,6 +1,4 @@
-using System;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using Lette.Core;
 using Lette.Systems;
 using Leopotam.Ecs;
@@ -8,8 +6,6 @@ using Aether = tainicom.Aether.Physics2D;
 using Lette.Components;
 using Microsoft.Xna.Framework.Input;
 using Lette.Resources;
-using System.IO;
-using System.Text.Json;
 using Lette.Lib.Physics;
 
 namespace Lette.States
@@ -78,33 +74,16 @@ namespace Lette.States
 
             systems.Init();
 
+            if (game.Init == null)
+                return;
+
             var level = world
                 .NewEntity()
-                .Replace(new Level { Src = "test" });
+                .Replace(new Level { Src = game.Init.Level });
 
-            var cossin = world
-                .NewEntity()
-                .Replace<Pos>(new Vector2(3, 3))
-                .Replace(new Sprite { Src = "cossin" })
-                .Replace(new Animator())
-                .Replace(new Actor { Speed = 10 })
-                .Replace(new Body { Shape = BodyShape.Circle(0.8f) })
-                .Replace(new KeyMap
-                {
-                    Value = new()
-                    {
-                        { Keys.Left, (InputType.X, -1) },
-                        { Keys.A, (InputType.X, -1) },
-                        { Keys.Right, (InputType.X, 1) },
-                        { Keys.D, (InputType.X, 1) },
-                        { Keys.Up, (InputType.Y, -1) },
-                        { Keys.W, (InputType.Y, -1) },
-                        { Keys.Down, (InputType.Y, 1) },
-                        { Keys.S, (InputType.Y, 1) }
-                    }
-                })
-                .Replace(new Input() { Value = EnumArray<InputType, float>.New() })
-                .Replace(new Camera());
+            var player = world.NewEntity().Replace<Id>("player");
+            foreach (var component in game.Init.Player)
+                component.Replace(player);
         }
 
         public void Update()

@@ -157,6 +157,7 @@ namespace Lette.Systems
 
                 batch.End();
 
+                // TODO toggleable debug view
                 debugView?.RenderDebugData(
                     Matrix.CreateOrthographicOffCenter(
                         0, game.GraphicsDevice.Viewport.Width,
@@ -164,6 +165,7 @@ namespace Lette.Systems
                         0, 1),
                     Matrix.CreateScale(Constants.PIXELS_PER_METER) * transform);
 
+                // TODO toggleable fps counter
                 var now = DateTime.Now;
                 var fps = prevFPS * 0.9 + 1000.0 / (now - prevTime).TotalMilliseconds * 0.1;
                 debugView?.DrawString(12, 12, Math.Round(fps, 2).ToString());

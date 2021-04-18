@@ -4,24 +4,17 @@
         "pos": [3, 3],
         "sprite": { "src": "cossin" },
         "animator": {},
-        "actor": { "speed": 8 },
-        "body": {
-            "shape": {
-                "type": "circle",
-                "radius": 0.6
-            }
-        },
+        "actor": { "speed": 10 },
+        "body": { "shape": { "type": "Circle", "radius": 0.8 } },
         "keyMap": {
-            "value": {
-                "left": ["x", -1],
-                "a": ["X", -1],
-                "right": ["x", 1],
-                "d": ["x", 1],
-                "up": ["y", -1],
-                "w": ["y", -1],
-                "down": ["y", 1],
-                "s": ["y", 1]
-            }
+            "left": ["x", -1],
+            "a": ["X", -1],
+            "right": ["x", 1],
+            "d": ["x", 1],
+            "up": ["y", -1],
+            "w": ["y", -1],
+            "down": ["y", 1],
+            "s": ["y", 1]
         },
         "input": {},
         "camera": {}

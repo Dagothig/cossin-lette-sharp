@@ -8,6 +8,7 @@ using System.IO;
 using Lette.Resources;
 using System;
 using FontStashSharp;
+using System.Text.Json;
 
 namespace Lette
 {
@@ -21,6 +22,7 @@ namespace Lette
         public FileSystemWatcher? Watcher;
         public FontSystem? Fonts;
         public TimeSpan Step = TimeSpan.FromSeconds(1) / 60;
+        public Init? Init;
 
         public CossinLette()
         {
@@ -46,6 +48,8 @@ namespace Lette
             };
             Fonts = FontSystemFactory.CreateStroked(GraphicsDevice, 1);
             Fonts.AddFont(File.ReadAllBytes("Content/fonts/Montserrat-Medium.ttf"));
+
+            Init = JsonSerializer.Deserialize<Init>(File.ReadAllText($"Content/init.json"), JsonSerialization.GetOptions());
 
             base.LoadContent();
         }

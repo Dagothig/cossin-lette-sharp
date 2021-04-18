@@ -134,14 +134,14 @@ namespace Lette.Components
         }
     }
 
-    public struct StaticCollisions : IEcsAutoReset<Body>, IReplaceOnEntity<StaticCollisions>
+    public struct StaticCollisions : IEcsAutoReset<StaticCollisions>, IReplaceOnEntity<StaticCollisions>
     {
         public List<Vector2[]> Chains;
 
         [JsonIgnore]
         public Aether.Dynamics.Body? Physics;
 
-        public void AutoReset(ref Body c)
+        public void AutoReset(ref StaticCollisions c)
         {
             c.Physics?.World.Remove(c.Physics);
             c.Physics = null;
