@@ -1,41 +1,31 @@
-using Microsoft.Xna.Framework;
-using Lette.Core;
-using Lette.Systems;
+using System;
+using System.IO;
+using System.Text.Json;
 using Leopotam.Ecs;
-using Aether = tainicom.Aether.Physics2D;
 using Lette.Components;
-using Microsoft.Xna.Framework.Input;
-using Lette.Resources;
+using Lette.Core;
+using Lette.Core.JsonSerialization;
 using Lette.Lib.Physics;
+using Lette.Resources;
+using Lette.Systems;
+using Microsoft.Xna.Framework;
+using Aether = tainicom.Aether.Physics2D;
 
 namespace Lette.States
 {
-    public class GameState : IState
+    public class GameState : EcsState
     {
-        string initSrc;
-
-        EcsWorld? world;
-        EcsSystems? updateSystems;
-        EcsSystems? drawSystems;
-        EcsSystems? systems;
-
-        CossinLette? game;
         Aether.Dynamics.World? physicsWorld;
         DebugView? physicsDebugView;
         GenArr<Sheet>? sheets;
         GenArr<Tileset>? tilesets;
         GenArr<LevelDefinition>? levels;
 
-        public bool CapturesUpdate => true;
-
-        public GameState(string initSrc = "Content/init.json")
+        public override void InitSystems(out EcsSystems update, out EcsSystems draw, out EcsSystems systems)
         {
-            this.initSrc = initSrc;
-        }
+            if (game == null)
+                throw new Exception();
 
-        public void Init(CossinLette game)
-        {
-            this.game = game;
             physicsWorld = new(Vector2.Zero);
             physicsDebugView = new(physicsWorld);
             physicsDebugView.LoadContent(game.GraphicsDevice, game.Fonts);
@@ -43,9 +33,7 @@ namespace Lette.States
             tilesets = new(new GenIdxAllocator());
             levels = new(new GenIdxAllocator());
 
-            world = new();
-
-            updateSystems = new EcsSystems(world)
+            update = new EcsSystems(world)
                 .Add(new SheetLoader())
                 .Add(new TilesetLoader())
                 .Add(new LevelLoader())
@@ -55,50 +43,35 @@ namespace Lette.States
                 .Add(new AABBs())
                 .Add(new Animated());
 
-            drawSystems = new EcsSystems(world)
-                .Add(new Renderer())
-                .Inject(game.Batch)
-                .Inject(game.Fonts);
+            draw = new EcsSystems(world)
+                .Add(new Renderer());
 
             systems = new EcsSystems(world)
-                .Add(updateSystems)
-                .Add(drawSystems)
-                .Inject(game)
-                .Inject(game.Watcher)
                 .Inject(sheets)
                 .Inject(tilesets)
                 .Inject(levels)
-                .Inject(game.Step)
                 .Inject(physicsWorld)
                 .Inject(physicsDebugView);
+        }
 
-            systems.Init();
+        public override void Init(CossinLette game)
+        {
+            base.Init(game);
 
-            if (game.Init == null)
-                return;
+            if (world == null)
+                throw new Exception();
+
+            var init = JsonSerializer.Deserialize<Init>(File.ReadAllText($"Content/init.json"), JsonSerialization.Options);
+            if (init == null)
+                throw new Exception();
 
             var level = world
                 .NewEntity()
-                .Replace(new Level { Src = game.Init.Level });
+                .Replace(new Level { Src = init.Level });
 
             var player = world.NewEntity().Replace<Id>("player");
-            foreach (var component in game.Init.Player)
+            foreach (var component in init.Player)
                 component.Replace(player);
-        }
-
-        public void Update()
-        {
-            updateSystems?.Run();
-        }
-        public void Draw()
-        {
-            drawSystems?.Run();
-        }
-
-        public void Destroy()
-        {
-            systems?.Destroy();
-            world?.Destroy();
         }
     }
 }

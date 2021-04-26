@@ -30,8 +30,8 @@
         "other": {
             "pos": [4, 5],
             "sprite": { "src": "cossin" },
-            "animator": {},
-            "actor": { "speed": 10, "flags": ["DirTL"] },
+            "animator": { "flags": ["DirTR"] },
+            "actor": { "speed": 10, "flags": ["DirTR"] },
             "body": { "shape": { "type": "Circle", "radius": 0.8 } }
         }
     }

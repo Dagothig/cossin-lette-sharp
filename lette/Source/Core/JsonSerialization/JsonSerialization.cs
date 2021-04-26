@@ -1,9 +1,8 @@
 using System.Collections.Generic;
-using Microsoft.Xna.Framework;
 using System.Text.Json;
 using Lette.Components;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
-
 namespace Lette.Core.JsonSerialization
 {
     public static class JsonSerialization

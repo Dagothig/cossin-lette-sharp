@@ -1,13 +1,13 @@
 using System;
+using FontStashSharp;
 using Leopotam.Ecs;
 using Lette.Components;
 using Lette.Core;
-using Lette.Resources;
 using Lette.Lib.Physics;
+using Lette.Resources;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using static System.MathF;
-using FontStashSharp;
 
 namespace Lette.Systems
 {
@@ -18,7 +18,7 @@ namespace Lette.Systems
         EcsFilter<Pos, Sprite, AABB>? sprites = null;
         EcsFilter<Tiles, Pos>? tileses = null;
         EcsFilter<Camera, Pos>? cameras = null;
-        GenArr<Tileset>? tilesets= null;
+        GenArr<Tileset>? tilesets = null;
         GenArr<Sheet>? sheets = null;
         DebugView? debugView = null;
         FontSystem? fonts = null;
@@ -29,88 +29,88 @@ namespace Lette.Systems
         public void RenderSprites(AABB region, float zend, float zextent)
         {
             if (sprites != null && batch != null) foreach (var i in sprites)
-            {
-                ref var aabb = ref sprites.Get3(i);
-                if (!region.Overlaps(aabb))
-                    continue;
+                {
+                    ref var aabb = ref sprites.Get3(i);
+                    if (!region.Overlaps(aabb))
+                        continue;
 
-                var pos = sprites.Get1(i).Value * Constants.PIXELS_PER_METER;
-                ref var sprite = ref sprites.Get2(i);
+                    var pos = sprites.Get1(i).Value * Constants.PIXELS_PER_METER;
+                    ref var sprite = ref sprites.Get2(i);
 
-                // TODO AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaa
+                    // TODO AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaa
 
-                var sheet = sheets?[sprite.SheetIdx];
-                if (sheet == null)
-                    continue;
-                var entry = sheet.Entries[sprite.Entry % sheet.Entries.Length];
-                if (entry == null || entry.Texture == null)
-                    continue;
-                var strip = entry.Strips[sprite.Strip % entry.Strips.Length];
-                var tile = strip?.Tiles[sprite.Tile % strip.Tiles.Length];
-                if (tile == null)
-                    continue;
+                    var sheet = sheets?[sprite.SheetIdx];
+                    if (sheet == null)
+                        continue;
+                    var entry = sheet.Entries[sprite.Entry % sheet.Entries.Length];
+                    if (entry == null || entry.Texture == null)
+                        continue;
+                    var strip = entry.Strips[sprite.Strip % entry.Strips.Length];
+                    var tile = strip?.Tiles[sprite.Tile % strip.Tiles.Length];
+                    if (tile == null)
+                        continue;
 
-                batch.Draw(
-                    entry.Texture,
-                    pos,
-                    tile.Quad,
-                    Color.White,
-                    0,
-                    entry.Decal,
-                    tile.Scale,
-                    SpriteEffects.None,
-                    (zend - pos.Y) / zextent);
-            }
+                    batch.Draw(
+                        entry.Texture,
+                        pos,
+                        tile.Quad,
+                        Color.White,
+                        0,
+                        entry.Decal,
+                        tile.Scale,
+                        SpriteEffects.None,
+                        (zend - pos.Y) / zextent);
+                }
         }
 
         public void RenderTilesets(AABB region, float zend, float zextent)
         {
             if (tileses != null && batch != null) foreach (var j in tileses)
-            {
-                ref var tiles = ref tileses.Get1(j);
-                var tileset = tilesets?[tiles.TilesetIdx];
-                if (tileset == null || tileset.Entries == null)
-                    continue;
-
-                var tileSize = tileset.Size.ToVector2();
-
-                var tpos = tileses.Get2(j).Value * Constants.PIXELS_PER_METER;
-                var tregion = ((region - tpos) / tileSize).Round();
-
-                var w = Math.Min(tiles.Idx.GetLength(0), tregion.X + tregion.Width);
-                var h = Math.Min(tiles.Idx.GetLength(1), tregion.Y + tregion.Height);
-                var d = tiles.Idx.GetLength(2);
-
-                for (var x = Math.Max(0, tregion.X); x < w; x++)
                 {
-                    var posX = tpos.X + x * tileset.Size.X;
-                    for (int y = Math.Max(0, tregion.Y); y < h; y++)
+                    ref var tiles = ref tileses.Get1(j);
+                    var tileset = tilesets?[tiles.TilesetIdx];
+                    if (tileset == null || tileset.Entries == null)
+                        continue;
+
+                    var tileSize = tileset.Size.ToVector2();
+
+                    var tpos = tileses.Get2(j).Value * Constants.PIXELS_PER_METER;
+                    var tregion = ((region - tpos) / tileSize).Round();
+
+                    var w = Math.Min(tiles.Idx.GetLength(0), tregion.X + tregion.Width);
+                    var h = Math.Min(tiles.Idx.GetLength(1), tregion.Y + tregion.Height);
+                    var d = tiles.Idx.GetLength(2);
+
+                    for (var x = Math.Max(0, tregion.X); x < w; x++)
                     {
-                        var posY = tpos.Y + y * tileset.Size.Y;
-                        for (int z = 0; z < d; z++)
+                        var posX = tpos.X + x * tileset.Size.X;
+                        for (int y = Math.Max(0, tregion.Y); y < h; y++)
                         {
-                            var tile = tiles.Idx[x, y, z];
-                            var entry = tileset.Entries[tile.Entry];
-                            var quad = entry.Quads[tile.Idx.X, tile.Idx.Y + entry.FrameTile];
-                            var layer = 1f;
+                            var posY = tpos.Y + y * tileset.Size.Y;
+                            for (int z = 0; z < d; z++)
+                            {
+                                var tile = tiles.Idx[x, y, z];
+                                var entry = tileset.Entries[tile.Entry];
+                                var quad = entry.Quads[tile.Idx.X, tile.Idx.Y + entry.FrameTile];
+                                var layer = 1f;
 
-                            if (tile.Height > 0)
-                                layer = (zend - ((tile.Height) * tileSize.Y + posY)) / zextent;
+                                if (tile.Height > 0)
+                                    layer = (zend - ((tile.Height) * tileSize.Y + posY)) / zextent;
 
-                            batch.Draw(
-                                entry.Texture,
-                                new Vector2(posX, posY),
-                                quad,
-                                Color.White,
-                                0,
-                                Vector2.Zero,
-                                Vector2.One,
-                                SpriteEffects.None,
-                                layer);
+                                batch.Draw(
+                                    entry.Texture,
+                                    new Vector2(posX, posY),
+                                    quad,
+                                    Color.White,
+                                    0,
+                                    Vector2.Zero,
+                                    Vector2.One,
+                                    SpriteEffects.None,
+                                    layer);
+                            }
                         }
                     }
                 }
-            }
         }
 
         public void Run()
@@ -120,7 +120,8 @@ namespace Lette.Systems
             var viewport = game.GraphicsDevice.Viewport;
             var bounds = game.GraphicsDevice.Viewport.Bounds;
             var n = cameras.GetEntitiesCount();
-            if (n == 0) {
+            if (n == 0)
+            {
                 return;
             }
             var cols = (int)Ceiling(Sqrt(n));
