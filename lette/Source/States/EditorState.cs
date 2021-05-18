@@ -1,11 +1,11 @@
 using System;
-using System.Threading.Tasks;
-using Gtk;
+using FontStashSharp;
 using Leopotam.Ecs;
 using Lette.Components;
 using Lette.Core;
 using Lette.Resources;
 using Lette.Systems;
+using Lette.Editor;
 
 namespace Lette.States
 {
@@ -14,23 +14,23 @@ namespace Lette.States
         GenArr<Sheet>? sheets;
         GenArr<Tileset>? tilesets;
         GenArr<LevelDefinition>? levels;
-        Task? windows;
+        DynamicSpriteFont? font;
+        EditorWindow? window;
 
         public override void InitSystems(out EcsSystems update, out EcsSystems draw, out EcsSystems systems)
         {
-            if (game == null)
-                throw new Exception();
-
             sheets = new(new GenIdxAllocator());
             tilesets = new(new GenIdxAllocator());
             levels = new(new GenIdxAllocator());
+            font = game?.Fonts?.GetFont(12);
 
             update = new EcsSystems(world)
                 .Add(new SheetLoader())
                 .Add(new TilesetLoader())
                 .Add(new LevelLoader())
                 .Add(new AABBs())
-                .Add(new Animated());
+                .Add(new Animated())
+                .Add(new EditorWindow());
 
             draw = new EcsSystems(world)
                 .Add(new Renderer());
@@ -38,23 +38,15 @@ namespace Lette.States
             systems = new EcsSystems(world)
                 .Inject(sheets)
                 .Inject(tilesets)
-                .Inject(levels);
+                .Inject(levels)
+                .Inject(font);
         }
+
+        public void OnWindowDestroyed(object? sender, EventArgs e) => game?.Exit();
 
         public override void Init(CossinLette game)
         {
             base.Init(game);
-
-            Application.Init();
-
-            Window test = new("Cossin Lette");
-
-            Label lbl = new();
-            lbl.Text = "Buonjour";
-
-            test.Add(lbl);
-
-            test.ShowAll();
 
             if (world == null)
                 throw new Exception();
@@ -67,12 +59,6 @@ namespace Lette.States
                 .NewEntity()
                 .Replace(new Camera())
                 .Replace(new Pos());
-        }
-
-        public override void Update()
-        {
-            base.Update();
-            Application.RunIteration(false);
         }
     }
 }

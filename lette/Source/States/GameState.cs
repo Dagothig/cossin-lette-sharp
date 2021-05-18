@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using FontStashSharp;
 using Leopotam.Ecs;
 using Lette.Components;
 using Lette.Core;
@@ -20,6 +21,7 @@ namespace Lette.States
         GenArr<Sheet>? sheets;
         GenArr<Tileset>? tilesets;
         GenArr<LevelDefinition>? levels;
+        DynamicSpriteFont? font;
 
         public override void InitSystems(out EcsSystems update, out EcsSystems draw, out EcsSystems systems)
         {
@@ -32,6 +34,7 @@ namespace Lette.States
             sheets = new(new GenIdxAllocator());
             tilesets = new(new GenIdxAllocator());
             levels = new(new GenIdxAllocator());
+            font = game.Fonts?.GetFont(12);
 
             update = new EcsSystems(world)
                 .Add(new SheetLoader())
@@ -51,7 +54,8 @@ namespace Lette.States
                 .Inject(tilesets)
                 .Inject(levels)
                 .Inject(physicsWorld)
-                .Inject(physicsDebugView);
+                .Inject(physicsDebugView)
+                .Inject(font);
         }
 
         public override void Init(CossinLette game)

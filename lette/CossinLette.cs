@@ -7,6 +7,7 @@ using Lette.Core;
 using Lette.States;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Gtk;
 
 namespace Lette
 {
@@ -30,6 +31,7 @@ namespace Lette
         protected override void Initialize()
         {
             Window.Title = "Cossin Lette";
+            Application.Init();
 
             base.Initialize();
         }
@@ -53,6 +55,7 @@ namespace Lette
         {
             Batch?.Dispose();
             Watcher?.Dispose();
+            Application.Quit();
 
             base.Dispose();
         }
@@ -70,6 +73,7 @@ namespace Lette
                 state.Update();
 
             base.Update(gameTime);
+            Application.RunIteration(false);
         }
 
         protected override void Draw(GameTime gameTime)
