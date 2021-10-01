@@ -65,7 +65,9 @@ namespace Lette.States
             if (world == null)
                 throw new Exception();
 
-            var init = JsonSerializer.Deserialize<Init>(File.ReadAllText($"Content/init.json"), JsonSerialization.Options);
+            var init = JsonSerializer.Deserialize<Init>(
+                File.ReadAllText($"Content/init.json"),
+                JsonSerialization.Options);
             if (init == null)
                 throw new Exception();
 

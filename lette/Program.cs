@@ -8,9 +8,7 @@ namespace Lette
         static void Main()
         {
             using (var game = new CossinLette())
-            {
                 game.Run();
-            }
         }
     }
 }
