@@ -7,10 +7,10 @@ namespace Lette
 {
     public static class Program
     {
-        public const string HELP = @"
-            Usage: cossin [OPTION]...
-            {--state|-s} {editor|game}
-            {--help|-h}";
+        public static readonly string HELP = string.Join("\n",
+            "Usage: cossin [OPTION]...",
+            "  -h, --help                 display this message",
+            "  -s, --state {editor|game}  launch the game directly on the given state");
 
         [STAThread]
         static int Main(string[] args)
@@ -22,6 +22,10 @@ namespace Lette
             {
                 switch (enumerator.Current)
                 {
+                    case "--help":
+                    case "-h":
+                        Console.WriteLine(HELP);
+                        return 0;
                     case "--state":
                     case "-s":
                         if (!enumerator.MoveNext())
@@ -42,10 +46,6 @@ namespace Lette
                                 return 1;
                         }
                         break;
-                    case "--help":
-                    case "-h":
-                        Console.WriteLine(HELP);
-                        return 0;
                     default:
                         Console.WriteLine($"Unrecognized option '{ enumerator.Current }'");
                         Console.WriteLine(HELP);
