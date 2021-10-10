@@ -21,10 +21,10 @@ namespace Lette
         public FontSystem? Fonts;
         public TimeSpan Step = TimeSpan.FromSeconds(1) / 60;
 
-        public CossinLette()
+        public CossinLette(IState? initState = null)
         {
             Graphics = new GraphicsDeviceManager(this);
-            QueuedStates.Enqueue(new EditorState());
+            QueuedStates.Enqueue(initState ?? new GameState());
         }
 
         protected override void Initialize()
