@@ -11,7 +11,7 @@ using static System.MathF;
 
 namespace Lette.Systems
 {
-    public class Renderer : IEcsRunSystem
+    public class RendererSystem : IEcsRunSystem
     {
         SpriteBatch? batch = null;
         CossinLette? game = null;

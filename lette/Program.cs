@@ -10,7 +10,7 @@ namespace Lette
         public static readonly string HELP = string.Join("\n",
             "Usage: cossin [OPTION]...",
             "  -h, --help                 display this message",
-            "  -s, --state {editor|game}  launch the game directly on the given state");
+            "  -s, --state {game}  launch the game directly on the given state");
 
         [STAThread]
         static int Main(string[] args)
@@ -35,9 +35,6 @@ namespace Lette
                         }
                         switch (enumerator.Current)
                         {
-                            case "editor":
-                                initState = new EditorState();
-                                break;
                             case "game":
                                 initState = new GameState();
                                 break;

@@ -6,7 +6,7 @@ using Lette.Core;
 
 namespace Lette.Systems
 {
-    public class Animated : IEcsRunSystem
+    public class AnimatedSystem : IEcsRunSystem
     {
         EcsFilter<Sprite, Animator>? animatedSprites = null;
         GenArr<Sheet>? sheets = null;

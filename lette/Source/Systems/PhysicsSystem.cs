@@ -7,13 +7,13 @@ using tainicom.Aether.Physics2D.Common;
 
 namespace Lette.Systems
 {
-    public class Physics : IEcsInitSystem, IEcsDestroySystem, IEcsRunSystem
+    public class PhysicsSystem : IEcsInitSystem, IEcsDestroySystem, IEcsRunSystem
     {
         public class BodiesListener : IEcsFilterListener
         {
-            internal Physics physics;
+            internal PhysicsSystem physics;
 
-            public BodiesListener(Physics physics)
+            public BodiesListener(PhysicsSystem physics)
             {
                 this.physics = physics;
             }
@@ -52,9 +52,9 @@ namespace Lette.Systems
 
         public class StaticCollisionsListener : IEcsFilterListener
         {
-            internal Physics physics;
+            internal PhysicsSystem physics;
 
-            public StaticCollisionsListener(Physics physics)
+            public StaticCollisionsListener(PhysicsSystem physics)
             {
                 this.physics = physics;
             }

@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework.Input;
 
 namespace Lette.Systems
 {
-    public class Inputs : IEcsRunSystem
+    public class InputSystem : IEcsRunSystem
     {
         EcsFilter<Input>? inputs = null;
         EcsFilter<KeyMap, Input>? keysInputs = null;

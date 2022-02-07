@@ -1,4 +1,3 @@
-using System;
 using Lette.Components;
 using Lette.Core;
 using Leopotam.Ecs;
@@ -7,7 +6,7 @@ using static System.MathF;
 
 namespace Lette.Systems
 {
-    public class Actors : IEcsRunSystem
+    public class ActorSystem : IEcsRunSystem
     {
         EcsFilter<Actor, Input>? actorInputs = null;
         EcsFilter<Actor, Animator>? actorAnimators = null;

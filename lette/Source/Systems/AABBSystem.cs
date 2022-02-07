@@ -5,7 +5,7 @@ using Lette.Resources;
 
 namespace Lette.Systems
 {
-    public class AABBs : IEcsRunSystem
+    public class AABBSystem : IEcsRunSystem
     {
         EcsFilter<Pos, Sprite>? spriteBoxes = null;
         GenArr<Sheet>? sheets = null;
