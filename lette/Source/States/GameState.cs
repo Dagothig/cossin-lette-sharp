@@ -37,13 +37,13 @@ namespace Lette.States
             font = game.Fonts?.GetFont(12);
 
             update = new EcsSystems(world)
-                .Add(new SheetLoader())
-                .Add(new TilesetLoader())
-                .Add(new LevelLoader())
-                .Add(new Inputs())
-                .Add(new Actors())
-                .Add(new Physics())
-                .Add(new AABBs())
+                .Add(new SheetLoaderSystem())
+                .Add(new TilesetLoaderSystem())
+                .Add(new LevelLoaderSystem())
+                .Add(new InputSystem())
+                .Add(new ActorSystem())
+                .Add(new PhysicsSystem())
+                .Add(new AABBSystem())
                 .Add(new Animated());
 
             draw = new EcsSystems(world)

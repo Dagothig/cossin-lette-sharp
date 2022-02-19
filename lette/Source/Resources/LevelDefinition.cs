@@ -9,8 +9,5 @@ namespace Lette.Resources
         public Dictionary<string, EntityDefinition> Entities = new();
     }
 
-    public class EntityDefinition : List<IReplaceOnEntity>
-    {
-        public int Mark;
-    }
+    public class EntityDefinition : List<IReplaceOnEntity> {}
 }

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Lette.Components;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
@@ -14,7 +15,7 @@ namespace Lette.Core.JsonSerialization
             Options = new()
             {
                 AllowTrailingCommas = true,
-                IgnoreNullValues = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                 IncludeFields = true,
                 WriteIndented = true,

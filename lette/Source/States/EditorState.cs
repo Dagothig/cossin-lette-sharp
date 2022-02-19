@@ -11,22 +11,6 @@ using System.Threading;
 
 namespace Lette.States
 {
-    public interface IAction
-    {
-
-    }
-
-    public class EditorWindowUpdater : IEcsRunSystem
-    {
-        EditorWindow? window = null;
-
-        public void Run()
-        {
-            if (window == null)
-                return;
-        }
-    }
-
     public class EditorState : EcsState
     {
         GenArr<Sheet>? sheets;
@@ -45,12 +29,11 @@ namespace Lette.States
             font = game?.Fonts?.GetFont(12);
 
             update = new EcsSystems(world)
-                .Add(new SheetLoader())
-                .Add(new TilesetLoader())
-                .Add(new LevelLoader())
-                .Add(new AABBs())
-                .Add(new Animated())
-                .Add(new EditorWindowUpdater());
+                .Add(new SheetLoaderSystem())
+                .Add(new TilesetLoaderSystem())
+                .Add(new LevelLoaderSystem())
+                .Add(new AABBSystem())
+                .Add(new Animated());
 
             draw = new EcsSystems(world)
                 .Add(new Renderer());
@@ -71,10 +54,6 @@ namespace Lette.States
 
             uiThread = new(new ThreadStart(StartUI));
             uiThread.Start();
-
-            var level = world
-                .NewEntity()
-                .Replace(new Level { Src = "test" });
 
             var camera = world
                 .NewEntity()

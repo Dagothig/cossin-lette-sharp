@@ -1,70 +1,57 @@
 using System;
 using Gtk;
+using Lette.Resources;
 
 namespace Lette.Editor
 {
     public class EditorWindow : Window
     {
-        public EditorWindow() : base("Éditeur lette")
-        {
-            DeleteEvent += (SendCompletedEventHandler, e) =>
-            {
-                Application.Quit();
-            };
+        public HistoryStack History;
+        public ListenableValue<LevelDefinition> LevelRef = new();
+        public ListenableValue<EntityDefinition> EntityRef = new();
 
-            AccelGroup accelGroup = new();
-            AddAccelGroup(accelGroup);
+        public AccelGroup AccelGroup;
+
+        public void Alert(string msg, Exception? exception = null)
+        {
+            var dialog = new MessageDialog(
+                this,
+                DialogFlags.Modal | DialogFlags.DestroyWithParent,
+                MessageType.Error,
+                ButtonsType.Ok,
+                msg + (exception == null ? "" : "\n" + exception.Message));
+            dialog.Title = "Éditeur Lette est triste";
+            dialog.Run();
+            dialog.Destroy();
+        }
+
+        public EditorWindow() : base("Éditeur Lette")
+        {
+            History = new(this);
+            DeleteEvent += (SendCompletedEventHandler, e) => Application.Quit();
+
+            LevelRef.OnChange += (level) => EntityRef.Value = null;
+
+            AccelGroup = new();
+            AddAccelGroup(AccelGroup);
 
             VBox vBox = new(false, 0);
 
             MenuBar menuBar = new();
 
             MenuItem fileItem = new("_File");
-
-            Menu fileMenu = new();
-
-            MenuItem newItem = new("_New");
-
-            fileMenu.Append(newItem);
-
-            MenuItem openItem = new("_Open");
-
-            fileMenu.Append(openItem);
-
-            MenuItem saveItem = new("_Save");
-
-            fileMenu.Append(saveItem);
-
-            fileMenu.Append(new SeparatorMenuItem());
-
-            MenuItem exitItem = new("_Exit");
-            exitItem.Activated += (sender, e) =>
-            {
-                Application.Quit();
-            };
-            exitItem.AddAccelerator("activate", accelGroup, new AccelKey(
-                Gdk.Key.q, Gdk.ModifierType.ControlMask, AccelFlags.Visible));
-
-            fileMenu.Append(exitItem);
-
-            fileItem.Submenu = fileMenu;
-
+            fileItem.Submenu = new FileMenu(this);
             menuBar.Append(fileItem);
+
+            MenuItem editItem = new("_Edit");
+            editItem.Submenu = new HistoryMenu(this);
+            menuBar.Append(editItem);
 
             vBox.PackStart(menuBar, false, false, 0);
 
             HBox hBox = new(false, 0);
 
-            TreeView entities = new();
-
-            entities.AppendColumn("Entity", new CellRendererText(), "text", 0);
-            entities.AppendColumn("Name", new CellRendererText(), "text", 1);
-
-            ListStore entitiesList = new(typeof(string), typeof(string));
-            entitiesList.AppendValues("Le Entity", "Named");
-
-            entities.Model = entitiesList;
-
+            EntitiesWidget entities = new(this);
             hBox.PackStart(entities, false, false, 0);
 
             vBox.PackStart(hBox, true, true, 0);
@@ -72,6 +59,9 @@ namespace Lette.Editor
             Add(vBox);
 
             ShowAll();
+
+            LevelRef.Notify();
+            EntityRef.Notify();
         }
     }
 }

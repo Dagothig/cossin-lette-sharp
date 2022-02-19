@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text.Json;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -154,5 +155,50 @@ namespace Lette.Core
 
         public static string ToPascal(this string str) =>
             Char.ToUpperInvariant(str[0]) + str.Substring(1);
+
+        public static void SetValue(this MemberInfo member, object property, object? value)
+        {
+            if (member.MemberType == MemberTypes.Property)
+                ((PropertyInfo)member).SetValue(property, value, null);
+            else if (member.MemberType == MemberTypes.Field)
+                ((FieldInfo)member).SetValue(property, value);
+            else
+                throw new Exception("Property must be of type FieldInfo or PropertyInfo");
+        }
+
+        public static object? GetValue(this MemberInfo member, object property)
+        {
+            if (member.MemberType == MemberTypes.Property)
+                return ((PropertyInfo)member).GetValue(property, null);
+            else if (member.MemberType == MemberTypes.Field)
+                return ((FieldInfo)member).GetValue(property);
+            else
+                throw new Exception("Property must be of type FieldInfo or PropertyInfo");
+        }
+
+        public static Type MemberType(this MemberInfo member)
+        {
+            switch (member.MemberType)
+            {
+                case MemberTypes.Field:
+                    return ((FieldInfo)member).FieldType;
+                case MemberTypes.Property:
+                    return ((PropertyInfo)member).PropertyType;
+                default:
+                    throw new ArgumentException("MemberInfo must be of type FieldInfo, PropertyInfo", "member");
+            }
+        }
+
+        public static void Set<T>(this List<T> list, T? value, Predicate<T> predicate)
+        {
+            var index = list.FindIndex(predicate);
+            if (index >= 0)
+                if (value == null)
+                    list.RemoveAt(index);
+                else
+                    list[index] = value;
+            else if (value != null)
+                list.Add(value);
+        }
     }
 }

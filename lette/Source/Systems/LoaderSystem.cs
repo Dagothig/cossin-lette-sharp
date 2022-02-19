@@ -29,7 +29,7 @@ namespace Lette.Systems
         }
     }
 
-    public abstract class Loader<H, R> : IEcsInitSystem, IEcsRunSystem, IEcsDestroySystem
+    public abstract class LoaderSystem<H, R> : IEcsInitSystem, IEcsRunSystem, IEcsDestroySystem
     where H: struct, IHandle
     {
         protected JsonSerializerOptions options = JsonSerialization.Options;
@@ -112,7 +112,7 @@ namespace Lette.Systems
         }
     }
 
-    public class SheetLoader : Loader<Sprite, Sheet>
+    public class SheetLoaderSystem : LoaderSystem<Sprite, Sheet>
     {
         public override string Folder => "img";
 
@@ -154,7 +154,7 @@ namespace Lette.Systems
         }
     }
 
-    public class TilesetLoader : Loader<Tiles, Tileset>
+    public class TilesetLoaderSystem : LoaderSystem<Tiles, Tileset>
     {
         public override string Folder => "img";
 
@@ -189,7 +189,7 @@ namespace Lette.Systems
         }
     }
 
-    public class LevelLoader : Loader<Level, LevelDefinition>
+    public class LevelLoaderSystem : LoaderSystem<Level, LevelDefinition>
     {
         public override string Folder => "levels";
 
