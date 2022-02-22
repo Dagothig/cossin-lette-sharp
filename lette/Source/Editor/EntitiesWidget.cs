@@ -97,20 +97,16 @@ namespace Lette.Editor
             window.EntityRef.OnChange += entity =>
             {
                 foreach (var (type, widget) in componentTypeWidgets)
-                    widget.Hide();
-                if (entity == null)
-                    return;
-                foreach (var component in entity)
                 {
-                    var type = component.GetType();
-                    if (componentTypeWidgets.ContainsKey(type))
+                    IReplaceOnEntity? component = entity?.Find(c => c.GetType() == type);
+                    if (component != null)
                     {
-                        var widget = componentTypeWidgets[type];
-                        widget.Update(entity, component);
-                        widget.Show();
+                        if (!widget.IsVisible)
+                            widget.Show();
+                        widget.Update(entity!, component);
                     }
                     else
-                        window.Alert($"Component type not supported { type.Name }");
+                        widget.Hide();
                 }
             };
         }
@@ -119,7 +115,7 @@ namespace Lette.Editor
     public class AutoComponentWidget: Box
     {
         EditorWindow window;
-        AutoComponentFieldWidget[] fieldWidgets;
+        FieldWidget[] fieldWidgets;
 
         public AutoComponentWidget(EditorWindow window, Type type) : base(Orientation.Vertical, 0)
         {
@@ -135,7 +131,20 @@ namespace Lette.Editor
                     !c.GetCustomAttributes(true).Any(a => 
                         a.GetType().IsAssignableTo(typeof(JsonIgnoreAttribute))))
                 .ToArray()
-                .Select(field => new AutoComponentFieldWidget(window, field)).ToArray();
+                .Select<MemberInfo, FieldWidget>(field => 
+                {
+                    var type = field.MemberType();
+                    if (type == typeof(int))
+                        return new IntFieldWidget(window, field);
+                    else if (type == typeof(float))
+                        return new FloatFieldWidget(window, field);
+                    else if (type == typeof(Vector2))
+                        return new Vector2FieldWidget(window, field);
+                    else if (type == typeof(string))
+                        return new StringFieldWidget(window, field);
+                    else 
+                        return new UnsupportedFieldWidget(window, field);
+                }).ToArray();
             foreach (var fieldWidget in fieldWidgets)
                 PackStart(fieldWidget, false, true, 0);
         }
@@ -147,19 +156,14 @@ namespace Lette.Editor
         }
     }
 
-    public class AutoComponentFieldWidget : Box
+    public abstract class FieldWidget : Box
     {
-        EditorWindow window;
-        MemberInfo field;
-        EntityDefinition? entity;
-        public Action<IReplaceOnEntity> UpdateComponent;
-        public void Update(EntityDefinition entity, IReplaceOnEntity component)
-        {
-            this.entity = entity;
-            UpdateComponent(component);
-        }
+        internal EditorWindow window;
+        internal MemberInfo field;
 
-        public AutoComponentFieldWidget(EditorWindow window, MemberInfo field) : base(Orientation.Horizontal, 8)
+        public abstract void Update(EntityDefinition entity, IReplaceOnEntity component);
+
+        public FieldWidget(EditorWindow window, MemberInfo field) : base(Orientation.Horizontal, 8)
         {
             this.window = window;
             this.field = field;
@@ -171,54 +175,136 @@ namespace Lette.Editor
             label.Ellipsize = Pango.EllipsizeMode.End;
             label.Xalign = 1;
             PackStart(label, false, true, 0);
+        }
+    }
 
-            var type = field.MemberType();
-            if (type == typeof(int) || type == typeof(float)) 
+    public abstract class FieldWidget<T> : FieldWidget where T: IEquatable<T>
+    {
+        internal EntityDefinition? entity;
+        internal T receivedValue;
+
+        public abstract void UpdateValue();
+        internal abstract T defaultValue { get; }
+
+        protected FieldWidget(EditorWindow window, MemberInfo field) : base(window, field) 
+        {
+            receivedValue = defaultValue;
+        }
+
+        public override void Update(EntityDefinition entity, IReplaceOnEntity component)
+        {
+            this.entity = entity;
+            var newValue = (T)(field.GetValue(component) ?? defaultValue);
+            if (!newValue.Equals(receivedValue))
             {
-                SpinButton entry = new(int.MinValue, int.MaxValue, 1), y = new(int.MinValue, int.MaxValue, 1);
-                entry.IsFloating = type == typeof(float);
-                entry.ValueChanged += (sender, e) =>
-                {
-                    if (entity != null)
-                        window.History.Push(
-                            type == typeof(float) ?
-                                UpdateComponentCommand<float>.For(entity, field, (float)entry.Value) :
-                                UpdateComponentCommand<int>.For(entity, field, entry.ValueAsInt));
-                };
-                PackStart(entry, true, true, 0);
-                UpdateComponent = component => entry.Value = field.GetValue(component) as double? ?? 0.0;
+                receivedValue = newValue;
+                UpdateValue();
             }
-            else if (type == typeof(string))
+        }
+
+        public void ValueChanged(T newValue)
+        {
+            if (!newValue.Equals(receivedValue) && entity != null)
             {
-                var entry = new Entry();
-                PackStart(entry, true, true, 0);
-                UpdateComponent = component => entry.Text = field.GetValue(component)?.ToString() ?? "";
+                receivedValue = newValue;
+                window.History.Push(UpdateComponentCommand<T>.For(entity, field, receivedValue));
             }
-            else if (type == typeof(Vector2))
-            {
-                SpinButton x = new(int.MinValue, int.MaxValue, 1), y = new(int.MinValue, int.MaxValue, 1);
-                x.IsFloating = y.IsFloating = true;
-                x.WidthChars = y.WidthChars = 4;
-                x.Digits = y.Digits = 4;
-                PackStart(x, true, true, 0);
-                PackStart(y, true, true, 0);
-                UpdateComponent = component =>
-                {
-                    var vec2 = field.GetValue(component) as Vector2? ?? Vector2.Zero;
-                    x.Value = vec2.X;
-                    y.Value = vec2.Y;
-                };
-            } 
-            else
-            {
-                var err = new Label($"Unsupported type { type.ToString() }");
-                err.LineWrap = true;
-                err.Wrap = true;
-                err.Xalign = 0;
-                err.LineWrapMode = Pango.WrapMode.WordChar;
-                PackStart(err, false, true, 0);
-                UpdateComponent = _ => {};
-            }
+        }
+        
+    }
+
+    public class UnsupportedFieldWidget : FieldWidget
+    {
+        public UnsupportedFieldWidget(EditorWindow window, MemberInfo field) : base(window, field)
+        {
+            var err = new Label($"Unsupported type { field.MemberType().ToString() }");
+            err.LineWrap = true;
+            err.Wrap = true;
+            err.Xalign = 0;
+            err.LineWrapMode = Pango.WrapMode.WordChar;
+            PackStart(err, false, true, 0);
+        }
+
+        public override void Update(EntityDefinition entity, IReplaceOnEntity component) {}
+    }
+
+    public class IntFieldWidget : FieldWidget<int>
+    {
+        SpinButton entry;
+
+        public IntFieldWidget(EditorWindow window, MemberInfo field) : base(window, field)
+        {
+            entry = new(int.MinValue, int.MaxValue, 1);
+            entry.Value = 0;
+            entry.IsFloating = false;
+            entry.ValueChanged += (_, _) => ValueChanged(entry.ValueAsInt);
+            PackStart(entry, true, true, 0);
+        }
+
+        internal override int defaultValue => 0;
+        public override void UpdateValue() => entry.Value = receivedValue;
+    }
+
+    public class FloatFieldWidget : FieldWidget<float>
+    {
+        SpinButton entry;
+
+        public FloatFieldWidget(EditorWindow window, MemberInfo field) : base(window, field)
+        {
+            entry = new(int.MinValue, int.MaxValue, 1);
+            entry.Value = 0;
+            entry.IsFloating = true;
+            entry.ValueChanged += (_, _) => ValueChanged((float)entry.Value);
+            PackStart(entry, true, true, 0);
+        }
+
+        internal override float defaultValue => 0;
+
+        public override void UpdateValue() => entry.Value = receivedValue;
+    }
+
+    public class StringFieldWidget : FieldWidget<string>
+    {
+        Entry entry;
+
+        public StringFieldWidget(EditorWindow window, MemberInfo field) : base(window, field)
+        {
+            entry = new();
+            entry.Changed += (_, _) => ValueChanged(entry.Text);
+            PackStart(entry, true, true, 0);
+        }
+
+        internal override string defaultValue => "";
+        public override void UpdateValue() => entry.Text = receivedValue;
+    }
+
+    public class Vector2FieldWidget : FieldWidget<Vector2>
+    {
+        SpinButton x, y;
+
+        public Vector2FieldWidget(EditorWindow window, MemberInfo field) : base(window, field)
+        {
+            x = new(int.MinValue, int.MaxValue, 1); 
+            y = new(int.MinValue, int.MaxValue, 1);
+            x.Value = y.Value = 0;
+            x.IsFloating = y.IsFloating = true;
+            x.WidthChars = y.WidthChars = 4;
+            x.Digits = y.Digits = 4;
+            EventHandler changedHandler = (_, _) => ValueChanged(new Vector2((float)x.Value, (float)y.Value));
+            x.ValueChanged += changedHandler;
+            y.ValueChanged += changedHandler;
+            PackStart(x, true, true, 0);
+            PackStart(y, true, true, 0);
+        }
+
+        internal override Vector2 defaultValue => Vector2.Zero;
+        public override void UpdateValue()
+        {
+            var originalReceived = receivedValue;
+            receivedValue = new Vector2(receivedValue.X, (float)y.Value);
+            x.Value = receivedValue.X;
+            receivedValue = originalReceived;
+            y.Value = receivedValue.Y;
         }
     }
 }
