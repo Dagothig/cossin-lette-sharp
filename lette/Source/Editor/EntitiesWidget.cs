@@ -127,10 +127,7 @@ namespace Lette.Editor
             fieldWidgets = type
                 .GetProperties().Cast<MemberInfo>()
                 .Concat(type.GetFields().Cast<MemberInfo>())
-                .Where(c =>
-                    !c.GetCustomAttributes(true).Any(a => 
-                        a.GetType().IsAssignableTo(typeof(JsonIgnoreAttribute))))
-                .ToArray()
+                .Where(field => !field.IsDefined(typeof(JsonIgnoreAttribute), true))
                 .Select<MemberInfo, FieldWidget>(field => 
                 {
                     var type = field.MemberType();
@@ -144,7 +141,8 @@ namespace Lette.Editor
                         return new StringFieldWidget(window, field);
                     else 
                         return new UnsupportedFieldWidget(window, field);
-                }).ToArray();
+                })
+                .ToArray();
             foreach (var fieldWidget in fieldWidgets)
                 PackStart(fieldWidget, false, true, 0);
         }

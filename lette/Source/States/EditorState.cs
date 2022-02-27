@@ -21,6 +21,8 @@ namespace Lette.States
         Thread? uiThread;
         EditorWindow? window;
 
+        EcsEntity? levelEntity;
+
         public override void InitSystems(out EcsSystems update, out EcsSystems draw, out EcsSystems systems)
         {
             sheets = new(new GenIdxAllocator());
@@ -59,12 +61,26 @@ namespace Lette.States
                 .NewEntity()
                 .Replace(new Camera())
                 .Replace(new Pos());
+
+            levelEntity = world
+                .NewEntity()
+                .Replace(new Level() { Idx = levels!.Allocator.Alloc() });
         }
 
         public void StartUI()
         {
             Application.Init();
             window = new();
+            window.LevelRef.OnChange += levelDef =>
+            {
+                ref var level = ref levelEntity!.Value.Get<Level>();
+                level.Src = levelDef?.Src ?? string.Empty;
+                levels![level.Idx] = levelDef;
+            };
+            window.EntityRef.OnChange += (entity) =>
+            {
+                
+            };
             Application.Run();
         }
 

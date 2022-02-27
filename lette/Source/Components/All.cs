@@ -43,6 +43,7 @@ namespace Lette.Components
 
         [JsonIgnore]
         public GenIdx SheetIdx;
+        [JsonIgnore]
         public GenIdx Idx { get => SheetIdx; set => SheetIdx = value; }
 
         public void AutoReset(ref Sprite c)
@@ -83,6 +84,7 @@ namespace Lette.Components
 
         [JsonIgnore]
         public GenIdx TilesetIdx;
+        [JsonIgnore]
         GenIdx IHandle.Idx { get => TilesetIdx; set => TilesetIdx = value; }
 
         public void AutoReset(ref Tiles c)
@@ -192,7 +194,9 @@ namespace Lette.Components
     public struct Level : IHandle, IReplaceOnEntity<Level>, IEcsAutoReset<Level>
     {
         public string Src { get; set; }
+        [JsonIgnore]
         public GenIdx Idx { get; set; }
+        [JsonIgnore]
         public int? DefHash { get; set; }
 
         public void AutoReset(ref Level c)

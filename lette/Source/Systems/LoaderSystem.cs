@@ -101,7 +101,7 @@ namespace Lette.Systems
                     continue;
                 if (entries.TryGetValue(handle.Src, out var foundEntry))
                     handle.Idx = foundEntry.Idx;
-                else
+                else if (handle.Src != null)
                 {
                     var entry = new LoadEntry<R>(handle.Src, resources.Allocator.Alloc());
                     handle.Idx = entry.Idx;
