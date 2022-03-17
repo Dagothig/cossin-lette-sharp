@@ -1,8 +1,10 @@
+using System;
 using System.Collections.Generic;
-using Lette.Components;
-using Lette.Resources;
+using System.Linq;
 using System.Reflection;
+using Lette.Components;
 using Lette.Core;
+using Lette.Resources;
 
 namespace Lette.Editor
 {
@@ -17,17 +19,22 @@ namespace Lette.Editor
             this.window = window;
         }
 
-        public delegate void onChangeDelegate(List<ICommand> stack, int index);
-        public event onChangeDelegate? OnChange;
+        public delegate void CommandDelegate(ICommand command);
+        public event CommandDelegate? OnApply;
+        public event CommandDelegate? OnUndo;
+
+        public delegate void OnChangeDelegate(List<ICommand> stack, int index);
+        public event OnChangeDelegate? OnChange;
 
         public void Push(ICommand? command)
         {
             if (command == null)
                 return;
-            Stack.RemoveRange(Index, Stack.Count -  Index);
+            Stack.RemoveRange(Index, Stack.Count - Index);
             Stack.Add(command);
             Index++;
             command.Apply(window);
+            OnApply?.Invoke(command);
             Notify();
         }
 
@@ -38,6 +45,7 @@ namespace Lette.Editor
             Index--;
             var command = Stack[Index];
             command.Undo(window);
+            OnUndo?.Invoke(command);
             Notify();
             return command;
         }
@@ -46,11 +54,12 @@ namespace Lette.Editor
 
         public ICommand? Redo()
         {
-            if (Index >= Stack.Count) 
+            if (Index >= Stack.Count)
                 return null;
             var command = Stack[Index];
-            command.Apply(window);
             Index++;
+            command.Apply(window);
+            OnApply?.Invoke(command);
             Notify();
             return command;
         }
@@ -63,14 +72,14 @@ namespace Lette.Editor
                 Undo();
         }
 
-        public void Clear() 
+        public void Clear()
         {
             Index = 0;
             Stack.Clear();
             Notify();
         }
 
-        public void Notify() 
+        public void Notify()
         {
             OnChange?.Invoke(Stack, Index);
         }
@@ -83,48 +92,105 @@ namespace Lette.Editor
         void Undo(EditorWindow window);
     }
 
-    public class UpdateComponentCommand<T> : ICommand
+    public class CRUDComponentCommand : ICommand
     {
-        EntityDefinition entity;
-        IReplaceOnEntity component;
-        MemberInfo field;
-        T newValue;
-        T oldValue;
+        public (string, EntityDefinition) Entity;
+        public IReplaceOnEntity? OldValue;
+        public IReplaceOnEntity? NewValue;
+
         public string Description { get; set; }
 
-        public static UpdateComponentCommand<T> For(EntityDefinition entity, MemberInfo field, T newValue)
+        public static CRUDComponentCommand Add((string, EntityDefinition) entity, IReplaceOnEntity component) =>
+            new CRUDComponentCommand(entity, $"Add ${ component.GetType().Name } to { entity.Item1 }")
+            {
+                NewValue = component
+            };
+
+        public static CRUDComponentCommand Remove((string, EntityDefinition) entity, IReplaceOnEntity component) =>
+            new CRUDComponentCommand(entity, $"Remove ${ component.GetType().Name } from { entity.Item1 }")
+            {
+                OldValue = component
+            };
+
+        public static CRUDComponentCommand Update<T>((string, EntityDefinition) entity, MemberInfo field, T newValue)
         {
-            var component = entity.Find(c => c.GetType() == field.DeclaringType)!;
-            var oldValue = (T)field.GetValue(component)!;
-            return new UpdateComponentCommand<T>(entity, component, field, newValue, oldValue);
+            var component = entity.Item2.Find(c => c.GetType() == field.DeclaringType)!;
+            var newComponent = (IReplaceOnEntity)Activator.CreateInstance(field.DeclaringType!)!;
+            foreach (var otherField in field.DeclaringType!.GetProperties().Cast<MemberInfo>()
+                .Concat(field.DeclaringType.GetFields().Cast<MemberInfo>()))
+                otherField.SetValue(newComponent, otherField.GetValue(component));
+            field.SetValue(newComponent, newValue);
+
+            return new CRUDComponentCommand(entity, $"Change { field.DeclaringType?.Name } { field.Name } to { newValue }")
+            {
+                OldValue = component,
+                NewValue = newComponent
+            };
         }
 
-        UpdateComponentCommand(EntityDefinition entity, IReplaceOnEntity component, MemberInfo field, T newValue, T oldValue)
+        public CRUDComponentCommand((string, EntityDefinition) entity, string description)
         {
-            this.entity = entity;
-            this.component = component;
-            this.field = field;
-            this.newValue = newValue;
-            this.oldValue = oldValue;
-            Description = $"Change { field.DeclaringType?.Name } { field.Name } to { newValue }";
+            this.Entity = entity;
+            Description = description;
         }
 
-        public void Apply(EditorWindow window)
+        void Move(EditorWindow window, IReplaceOnEntity? oldValue, IReplaceOnEntity? newValue)
         {
-            field.SetValue(component, newValue);
-            if (window.EntityRef.Value != entity)
-                window.EntityRef.Value = entity;
+            if (oldValue != null)
+                Entity.Item2.Remove(oldValue);
+            if (newValue != null)
+                Entity.Item2.Add(newValue);
+            if (window.EntityRef.Value != Entity)
+                window.EntityRef.Value = Entity;
             else
                 window.EntityRef.Notify();
         }
 
-        public void Undo(EditorWindow window)
+        public void Apply(EditorWindow window) => Move(window, OldValue, NewValue);
+        public void Undo(EditorWindow window) => Move(window, NewValue, OldValue);
+    }
+
+    public class CRUDEntityCommand : ICommand
+    {
+        public (string, EntityDefinition)? OldValue;
+        public (string, EntityDefinition)? NewValue;
+
+        public string Description { get; set; }
+
+        public static CRUDEntityCommand Rename((string, EntityDefinition) entity, string newId) =>
+            new CRUDEntityCommand($"Rename entity { entity.Item1 } to { newId }")
+            {
+                OldValue = entity,
+                NewValue = (newId, entity.Item2),
+            };
+
+        public static CRUDEntityCommand Remove((string, EntityDefinition) entity) =>
+            new CRUDEntityCommand($"Remove entity { entity.Item1 }")
+            {
+                OldValue = entity
+            };
+
+        public static CRUDEntityCommand Add((string, EntityDefinition) entity) =>
+            new CRUDEntityCommand($"Add entity { entity.Item1 }")
+            {
+                NewValue = entity
+            };
+
+        public CRUDEntityCommand(string description)
         {
-            field.SetValue(component, oldValue);
-            if (window.EntityRef.Value != entity)
-                window.EntityRef.Value = entity;
-            else
-                window.EntityRef.Notify();
+            Description = description;
         }
+
+        void Move(EditorWindow window, (string, EntityDefinition)? prev, (string, EntityDefinition)? next)
+        {
+            if (prev.HasValue)
+                window.LevelRef.Value!.Entities.Remove(prev.Value.Item1);
+            if (next.HasValue)
+                window.LevelRef.Value!.Entities[next.Value.Item1] = next.Value.Item2;
+            window.EntityRef.Value = next;
+        }
+
+        public void Apply(EditorWindow window) => Move(window, OldValue, NewValue);
+        public void Undo(EditorWindow window) => Move(window, NewValue, OldValue);
     }
 }

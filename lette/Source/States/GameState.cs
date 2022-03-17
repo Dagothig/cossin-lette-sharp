@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using FontStashSharp;
@@ -22,6 +23,7 @@ namespace Lette.States
         GenArr<Tileset>? tilesets;
         GenArr<LevelDefinition>? levels;
         DynamicSpriteFont? font;
+        Dictionary<string, EcsEntity>? namedEntities;
 
         public override void InitSystems(out EcsSystems update, out EcsSystems draw, out EcsSystems systems)
         {
@@ -34,6 +36,7 @@ namespace Lette.States
             sheets = new(new GenIdxAllocator());
             tilesets = new(new GenIdxAllocator());
             levels = new(new GenIdxAllocator());
+            namedEntities = new(128);
             font = game.Fonts?.GetFont(12);
 
             update = new EcsSystems(world)
@@ -55,6 +58,7 @@ namespace Lette.States
                 .Inject(levels)
                 .Inject(physicsWorld)
                 .Inject(physicsDebugView)
+                .Inject(namedEntities)
                 .Inject(font);
         }
 

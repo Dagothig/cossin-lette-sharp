@@ -1,6 +1,6 @@
 using Leopotam.Ecs;
-using Lette.Core;
 using Lette.Components;
+using Lette.Core;
 using Lette.Resources;
 
 namespace Lette.Systems
@@ -12,7 +12,7 @@ namespace Lette.Systems
 
         public void Run()
         {
-            if (spriteBoxes != null) foreach (var i in spriteBoxes)
+            foreach (var i in spriteBoxes!)
             {
                 ref var pos = ref spriteBoxes.Get1(i);
                 ref var sprite = ref spriteBoxes.Get2(i);

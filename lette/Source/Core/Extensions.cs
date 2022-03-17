@@ -46,6 +46,19 @@ namespace Lette.Core
             return val;
         }
 
+        public static void RemoveAll<K, V>(this Dictionary<K, V> dict, IEnumerable<K> keys)
+        where K : notnull
+        {
+            foreach (var key in keys)
+                dict.Remove(key);
+        }
+
+        public static void PushAll<V>(this Stack<V> stack, IEnumerable<V> values)
+        {
+            foreach (var v in values)
+                stack.Push(v);
+        }
+
         public static IEnumerable<T> Stream<T>() where T : new()
         {
             while (true)

@@ -9,6 +9,8 @@ namespace Lette.Core
         public int Index;
         public int Generation;
 
+        public static readonly GenIdx Null = new();
+
         public bool IsNull => Generation == 0;
     }
 
@@ -35,12 +37,8 @@ namespace Lette.Core
             if (!Free.TryPop(out var index))
                 index = Count;
             var generation = NextGeneration++;
-            Entries[index] = new AllocatorEntry
-            {
-                Alive = true,
-                Generation = generation
-            };
-            return new GenIdx { Index = index, Generation = generation };
+            Entries[index] = new() { Alive = true, Generation = generation };
+            return new() { Index = index, Generation = generation };
         }
 
         public bool Dealloc(GenIdx index)
@@ -49,7 +47,7 @@ namespace Lette.Core
             if (entry.Generation != index.Generation || !entry.Alive)
                 return false;
             Free.Push(index.Index);
-            entry.Alive = false;
+            Entries[index.Index] = new() { Alive = false, Generation = entry.Generation };
             return true;
         }
 

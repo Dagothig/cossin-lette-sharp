@@ -14,7 +14,6 @@ namespace Lette.Editor
     public class EntitiesWidget : Box
     {
         EditorWindow window;
-        Dictionary<EntityDefinition, TreeRowReference> EntityRows = new();
 
         public EntitiesWidget(EditorWindow window) : base(Orientation.Horizontal, 0)
         {
@@ -26,15 +25,18 @@ namespace Lette.Editor
             entitiesChooser.AppendColumn("Name", new CellRendererText(), "text", 0);
 
             ListStore entitiesList = new(typeof(string), typeof(string));
+            Dictionary<string, TreeRowReference> entityRows = new();
+
             window.LevelRef.OnChange += level =>
             {
                 entitiesList.Clear();
+                entityRows.Clear();
                 if (level == null)
                     return;
                 foreach (var nameEntity in level.Entities)
                 {
                     var iter = entitiesList.AppendValues(nameEntity.Key);
-                    EntityRows[nameEntity.Value] = new TreeRowReference(
+                    entityRows[nameEntity.Key] = new TreeRowReference(
                         entitiesList,
                         entitiesList.GetPath(iter));
                 }
@@ -48,15 +50,15 @@ namespace Lette.Editor
                 {
                     entitiesList.GetIter(out TreeIter iter, path);
                     string name = (string)entitiesList.GetValue(iter, 0);
-                    window.EntityRef.Value = window.LevelRef.Value!.Entities[name];
+                    window.EntityRef.Value = (name, window.LevelRef.Value!.Entities[name]);
                 }
             };
-            window.EntityRef.OnChange += entity =>
+            window.EntityRef.OnChange += nameEntity =>
             {
-                if (entity == null)
-                    entitiesChooser.Selection.UnselectAll();
+                if (nameEntity.HasValue)
+                    entitiesChooser.Selection.SelectPath(entityRows[nameEntity.Value.Item1].Path);
                 else
-                    entitiesChooser.Selection.SelectPath(EntityRows[entity].Path);
+                    entitiesChooser.Selection.UnselectAll();
             };
 
             PackStart(entitiesChooser, false, false, 0);
@@ -94,16 +96,16 @@ namespace Lette.Editor
                 PackStart(widget, false, true, 0);
             }
 
-            window.EntityRef.OnChange += entity =>
+            window.EntityRef.OnChange += nameEntity =>
             {
                 foreach (var (type, widget) in componentTypeWidgets)
                 {
-                    IReplaceOnEntity? component = entity?.Find(c => c.GetType() == type);
+                    IReplaceOnEntity? component = nameEntity?.Item2.Find(c => c.GetType() == type);
                     if (component != null)
                     {
                         if (!widget.IsVisible)
                             widget.Show();
-                        widget.Update(entity!, component);
+                        widget.Update(nameEntity!.Value, component);
                     }
                     else
                         widget.Hide();
@@ -147,7 +149,7 @@ namespace Lette.Editor
                 PackStart(fieldWidget, false, true, 0);
         }
 
-        public void Update(EntityDefinition entity, IReplaceOnEntity component)
+        public void Update((string, EntityDefinition) entity, IReplaceOnEntity component)
         {
             foreach (var fieldWidget in fieldWidgets)
                 fieldWidget.Update(entity, component);
@@ -159,7 +161,7 @@ namespace Lette.Editor
         internal EditorWindow window;
         internal MemberInfo field;
 
-        public abstract void Update(EntityDefinition entity, IReplaceOnEntity component);
+        public abstract void Update((string, EntityDefinition) entity, IReplaceOnEntity component);
 
         public FieldWidget(EditorWindow window, MemberInfo field) : base(Orientation.Horizontal, 8)
         {
@@ -178,7 +180,7 @@ namespace Lette.Editor
 
     public abstract class FieldWidget<T> : FieldWidget where T: IEquatable<T>
     {
-        internal EntityDefinition? entity;
+        internal (string, EntityDefinition)? entity;
         internal T receivedValue;
 
         public abstract void UpdateValue();
@@ -189,7 +191,7 @@ namespace Lette.Editor
             receivedValue = defaultValue;
         }
 
-        public override void Update(EntityDefinition entity, IReplaceOnEntity component)
+        public override void Update((string, EntityDefinition) entity, IReplaceOnEntity component)
         {
             this.entity = entity;
             var newValue = (T)(field.GetValue(component) ?? defaultValue);
@@ -202,10 +204,10 @@ namespace Lette.Editor
 
         public void ValueChanged(T newValue)
         {
-            if (!newValue.Equals(receivedValue) && entity != null)
+            if (!newValue.Equals(receivedValue) && entity.HasValue)
             {
                 receivedValue = newValue;
-                window.History.Push(UpdateComponentCommand<T>.For(entity, field, receivedValue));
+                window.History.Push(CRUDComponentCommand.Update<T>(entity.Value, field, receivedValue));
             }
         }
         
@@ -223,7 +225,7 @@ namespace Lette.Editor
             PackStart(err, false, true, 0);
         }
 
-        public override void Update(EntityDefinition entity, IReplaceOnEntity component) {}
+        public override void Update((string, EntityDefinition) entity, IReplaceOnEntity component) {}
     }
 
     public class IntFieldWidget : FieldWidget<int>

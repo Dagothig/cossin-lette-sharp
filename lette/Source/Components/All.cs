@@ -11,6 +11,7 @@ namespace Lette.Components
     public interface IReplaceOnEntity
     {
         void Replace(EcsEntity entity);
+        void Remove(EcsEntity entity);
     }
 
     public interface IReplaceOnEntity<T> : IReplaceOnEntity where T : struct
@@ -19,14 +20,19 @@ namespace Lette.Components
         {
             entity.Replace<T>((T)this);
         }
+
+        void IReplaceOnEntity.Remove(EcsEntity entity)
+        {
+            entity.Del<T>();
+        }
     }
 
     public interface IHandle
     {
-        string Src { get; }
+        string? Src { get; }
 
         [JsonIgnore]
-        GenIdx Idx { get; set; }
+        GenIdx Idx { get; set; }
     }
 
     public interface IValue<T>
@@ -36,7 +42,7 @@ namespace Lette.Components
 
     public struct Sprite : IHandle, IReplaceOnEntity<Sprite>, IEcsAutoReset<Sprite>
     {
-        public string Src { get; set; }
+        public string? Src { get; set; }
         public int Entry;
         public int Strip;
         public int Tile;
@@ -79,7 +85,7 @@ namespace Lette.Components
             return idx;
         }
 
-        public string Src { get; set; }
+        public string? Src { get; set; }
         public Tile[,,] Idx;
 
         [JsonIgnore]
@@ -104,7 +110,7 @@ namespace Lette.Components
         public Vector2 Value { get; set; }
 
         public static implicit operator Vector2(Pos pos) => pos.Value;
-        public static implicit operator Pos(Vector2 pos) => new Pos { Value = pos };
+        public static implicit operator Pos(Vector2 pos) => new Pos { Value = pos };
     }
 
     public enum BodyShapeType
@@ -193,7 +199,7 @@ namespace Lette.Components
 
     public struct Level : IHandle, IReplaceOnEntity<Level>, IEcsAutoReset<Level>
     {
-        public string Src { get; set; }
+        public string? Src { get; set; }
         [JsonIgnore]
         public GenIdx Idx { get; set; }
         [JsonIgnore]
@@ -211,7 +217,7 @@ namespace Lette.Components
         public string Value { get; set; }
 
         public static implicit operator string(Id str) => str.Value;
-        public static implicit operator Id(string str) => new Id { Value = str };
+        public static implicit operator Id(string str) => new Id { Value = str };
     }
 
     public struct Owner : IValue<EcsEntity>
@@ -219,6 +225,6 @@ namespace Lette.Components
         public EcsEntity Value { get; set; }
 
         public static implicit operator EcsEntity(Owner owner) => owner.Value;
-        public static implicit operator Owner(EcsEntity owner) => new Owner { Value = owner };
+        public static implicit operator Owner(EcsEntity owner) => new Owner { Value = owner };
     }
 }

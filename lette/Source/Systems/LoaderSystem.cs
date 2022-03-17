@@ -1,18 +1,18 @@
+using System;
 using System.Collections.Generic;
-using System.Text.Json;
 using System.IO;
+using System.Linq;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using Leopotam.Ecs;
 using Lette.Components;
-using Lette.Resources;
-using Microsoft.Xna.Framework.Graphics;
-using System.Threading.Tasks;
-using Microsoft.Xna.Framework;
-using System.Linq;
-using Tile = Lette.Resources.Tile;
 using Lette.Core;
-using System;
-using System.Threading;
 using Lette.Core.JsonSerialization;
+using Lette.Resources;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using Tile = Lette.Resources.Tile;
 
 namespace Lette.Systems
 {
@@ -30,7 +30,7 @@ namespace Lette.Systems
     }
 
     public abstract class LoaderSystem<H, R> : IEcsInitSystem, IEcsRunSystem, IEcsDestroySystem
-    where H: struct, IHandle
+    where H : struct, IHandle
     {
         protected JsonSerializerOptions options = JsonSerialization.Options;
         protected FileSystemWatcher? watcher = null;
@@ -39,6 +39,9 @@ namespace Lette.Systems
         protected EcsFilter<H>? handles = null;
 
         protected GenArr<R>? resources = null;
+        protected bool usedEntriesRunValue = false;
+        protected bool[]? usedEntries = null;
+        protected Stack<string> unusedEntryKeys = new();
         protected Dictionary<string, LoadEntry<R>> entries = new();
 
         public abstract string Folder { get; }
@@ -61,7 +64,7 @@ namespace Lette.Systems
                     if (!token.IsCancellationRequested)
                         resources[entry.Idx] = result;
                 }
-                catch (OperationCanceledException) {}
+                catch (OperationCanceledException) { }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Could not load resource { entry.Src }");
@@ -74,6 +77,7 @@ namespace Lette.Systems
         {
             if (watcher != null)
                 watcher.Changed += OnChanged;
+            usedEntries = new bool[resources!.Backing.Length];
         }
 
         public void Destroy()
@@ -94,21 +98,44 @@ namespace Lette.Systems
 
         public virtual void Run()
         {
-            if (handles != null && entries != null && resources != null) foreach (var i in handles)
+            usedEntriesRunValue = !usedEntriesRunValue;
+            foreach (var i in handles!)
             {
                 ref var handle = ref handles.Get1(i);
                 if (!handle.Idx.IsNull)
                     continue;
-                if (entries.TryGetValue(handle.Src, out var foundEntry))
+                if (handle.Src != null && entries.TryGetValue(handle.Src, out var foundEntry))
+                {
                     handle.Idx = foundEntry.Idx;
+                }
                 else if (handle.Src != null)
                 {
-                    var entry = new LoadEntry<R>(handle.Src, resources.Allocator.Alloc());
+                    var entry = new LoadEntry<R>(handle.Src, resources!.Allocator.Alloc());
                     handle.Idx = entry.Idx;
                     entries[handle.Src] = entry;
                     Load(entry);
                 }
+                usedEntries![handle.Idx.Index] = usedEntriesRunValue;
             }
+            // Deallocate unused resources
+            for (var i = 0; i < usedEntries!.Length; i++)
+                if (usedEntries[i] != usedEntriesRunValue)
+                {
+                    var entry = resources!.Allocator.Entries[i];
+                    if (entry.Alive)
+                    {
+                        var index = new GenIdx { Index = i, Generation = entry.Generation };
+                        resources[index] = default(R);
+                        resources.Allocator.Dealloc(index);
+                    }
+                    usedEntries[i] = usedEntriesRunValue;
+                }
+            // Remove dangling entries using a stack because you can't modify a dictionary while iterating through it.
+            unusedEntryKeys.PushAll(entries
+                .Where(e => !resources!.Allocator.Alive(e.Value.Idx))
+                .Select(e => e.Key));
+            entries.RemoveAll(unusedEntryKeys);
+            unusedEntryKeys.Clear();
         }
     }
 
@@ -176,8 +203,10 @@ namespace Lette.Systems
 
                     var size = entry.Texture.Size() / tileset.Size;
                     entry.Quads = new Rectangle[size.X, size.Y];
-                    for (var x = 0; x < size.X; x++) {
-                        for (var y = 0; y < size.Y; y++) {
+                    for (var x = 0; x < size.X; x++)
+                    {
+                        for (var y = 0; y < size.Y; y++)
+                        {
                             entry.Quads[x, y] = new Rectangle(
                                 new Point(x, y) * tileset.Size,
                                 tileset.Size);
@@ -194,7 +223,9 @@ namespace Lette.Systems
         public override string Folder => "levels";
 
         EcsFilter<Owner>? owned = null;
+        EcsFilter<Id>? named = null;
         EcsWorld? world = null;
+        Dictionary<string, EcsEntity>? namedEntities = null;
 
         public override async Task<LevelDefinition> Load(string src, CancellationToken token)
         {
@@ -214,7 +245,7 @@ namespace Lette.Systems
         {
             base.Run();
 
-            if (handles == null || owned == null || world == null)
+            if (handles == null || owned == null || world == null || resources == null || named == null || namedEntities == null)
                 return;
 
             foreach (var i in handles)
@@ -228,20 +259,18 @@ namespace Lette.Systems
                 if (level.DefHash == hash)
                     continue;
 
-                ref var levelEntity = ref handles.GetEntity(i);
-                level.DefHash = hash;
-
-                foreach (var j in owned)
+                var levelEntity = handles.GetEntity(i);
+                // Recreate entities
+                if (level.DefHash != null)
                 {
-                    ref var owner = ref owned.Get1(j);
-                    // TODO Keep a map of the owned entities for a level
-                    if (owner.Value != levelEntity)
-                        continue;
-
-                    ref var entity = ref owned.GetEntity(j);
-                    entity.Destroy();
+                    foreach (var j in owned)
+                    {
+                        ref var owner = ref owned.Get1(j);
+                        if (owner.Value == levelEntity)
+                            owned.GetEntity(j).Destroy();
+                    }
                 }
-
+                // Create new entities
                 foreach (var (id, edef) in def.Entities)
                 {
                     var entity = world
@@ -251,7 +280,23 @@ namespace Lette.Systems
                     foreach (var component in edef)
                         component.Replace(entity);
                 }
+                level.DefHash = hash;
             }
+
+            // Remove orphans
+            foreach (var i in owned)
+            {
+                ref var owner = ref owned.Get1(i);
+                if (!owner.Value.IsAlive())
+                {
+                    ref var entity = ref owned.GetEntity(i);
+                    entity.Destroy();
+                }
+            }
+
+            namedEntities.Clear();
+            foreach (var i in named)
+                namedEntities[named.Get1(i)] = named.GetEntity(i);
         }
     }
 }

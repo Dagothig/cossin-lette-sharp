@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Gtk;
 using Lette.Resources;
 
@@ -8,7 +9,7 @@ namespace Lette.Editor
     {
         public HistoryStack History;
         public ListenableValue<LevelDefinition> LevelRef = new();
-        public ListenableValue<EntityDefinition> EntityRef = new();
+        public ListenableValue<(string, EntityDefinition)?> EntityRef = new();
 
         public AccelGroup AccelGroup;
 

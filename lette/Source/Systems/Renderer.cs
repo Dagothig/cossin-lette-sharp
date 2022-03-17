@@ -32,7 +32,9 @@ namespace Lette.Systems
 
         public void RenderSprites(AABB region, float zend, float zextent)
         {
-            if (sprites != null && batch != null) foreach (var i in sprites)
+            if (sprites == null || batch == null)
+                return;
+            foreach (var i in sprites)
             {
                 ref var aabb = ref sprites.Get3(i);
                 if (!region.Overlaps(aabb))
@@ -69,7 +71,9 @@ namespace Lette.Systems
 
         public void RenderTilesets(AABB region, float zend, float zextent)
         {
-            if (tileses != null && batch != null) foreach (var j in tileses)
+            if (tileses == null || batch == null)
+                return;
+            foreach (var j in tileses)
             {
                 ref var tiles = ref tileses.Get1(j);
                 var tileset = tilesets?[tiles.TilesetIdx];
